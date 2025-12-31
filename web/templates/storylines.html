@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Storylines - Video Manager{% endblock %}
+
+{% block content %}
+<h1>Storylines</h1>
+
+<p style="color: #888; margin-bottom: 1.5rem;">
+    AI-generated storyline suggestions based on your video transcripts.
+</p>
+
+{% if storylines %}
+<div class="grid">
+    {% for s in storylines %}
+    <a href="/storylines/{{ s.id }}" class="card" style="text-decoration: none;">
+        <div class="card-title">{{ s.title }}</div>
+        <div style="margin: 0.75rem 0; color: #ccc;">{{ s.hook }}</div>
+        <div class="card-meta">
+            <span class="badge badge-info">{{ "%.0f"|format(s.estimated_duration) }}s</span>
+            &bull; {{ s.clips|length }} clips
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>No storylines yet</h2>
+    <p>Generate storylines using the CLI: <code>python -m scripts.main storylines generate</code></p>
+</div>
+{% endif %}
+{% endblock %}

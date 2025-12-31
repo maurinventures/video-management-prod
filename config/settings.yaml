@@ -1,0 +1,45 @@
+# Video Management System Configuration
+# AWS Infrastructure Settings
+
+aws:
+  region: us-east-1
+  s3:
+    bucket: per-aspera-brain
+    prefixes:
+      videos: videos/
+      transcripts: transcripts/
+      clips: clips/
+      compiled: compiled/
+  rds:
+    database: video_management
+    port: 5432
+
+# Local directories for temporary processing
+local:
+  temp_dir: /tmp/video-processing
+  videos: local_videos/
+  transcripts: local_transcripts/
+  clips: local_clips/
+
+# Transcription settings
+transcription:
+  provider: aws  # aws (Transcribe) or whisper (local)
+  language: en-US
+  output_format: json
+
+# Video processing settings
+video:
+  supported_formats:
+    - mp4
+    - mov
+    - avi
+    - mkv
+  output_format: mp4
+  codec: libx264
+  audio_codec: aac
+
+# Logging
+logging:
+  level: INFO
+  file: logs/video_management.log
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

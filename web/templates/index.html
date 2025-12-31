@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Video Manager{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stats">
+    <div class="stat-card">
+        <div class="stat-number">{{ video_count }}</div>
+        <div class="stat-label">Videos</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ transcript_count }}</div>
+        <div class="stat-label">Transcripts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ storyline_count }}</div>
+        <div class="stat-label">Storylines</div>
+    </div>
+</div>
+
+<h2>Quick Actions</h2>
+<div class="grid">
+    <a href="/transcripts/search" class="card" style="text-decoration: none;">
+        <div class="card-title">Search Transcripts</div>
+        <div class="card-meta">Find specific quotes or topics across all videos</div>
+    </a>
+    <a href="/storylines" class="card" style="text-decoration: none;">
+        <div class="card-title">View Storylines</div>
+        <div class="card-meta">Review AI-generated storyline suggestions</div>
+    </a>
+    <a href="/edit-scripts" class="card" style="text-decoration: none;">
+        <div class="card-title">Edit Scripts</div>
+        <div class="card-meta">View scripts ready for Premiere Pro</div>
+    </a>
+</div>
+{% endblock %}

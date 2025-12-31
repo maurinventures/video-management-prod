@@ -1,0 +1,47 @@
+# Secrets - NEVER commit
+config/secrets.yaml
+*.pem
+*.key
+
+# Local video/audio files
+local_videos/
+local_clips/
+local_transcripts/
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.mp3
+*.wav
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Temp files
+/tmp/
+*.tmp
+*.temp
+
+# Jupyter
+.ipynb_checkpoints/

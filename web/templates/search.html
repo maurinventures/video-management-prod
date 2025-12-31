@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Search Transcripts - Video Manager{% endblock %}
+
+{% block content %}
+<h1>Search Transcripts</h1>
+
+<form class="search-box" method="GET" action="/transcripts/search">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search for quotes, topics, keywords..." autofocus>
+    <button type="submit" class="btn">Search</button>
+</form>
+
+{% if query %}
+<p style="color: #888; margin-bottom: 1.5rem;">
+    Found {{ results|length }} result{% if results|length != 1 %}s{% endif %} for "{{ query }}"
+</p>
+
+{% if results %}
+<div class="results">
+    {% for r in results %}
+    <div class="card">
+        <div class="card-title">{{ r.video_title }}</div>
+        <div class="card-meta">{{ "%.1f"|format(r.start) }}s - {{ "%.1f"|format(r.end) }}s</div>
+        <div style="margin-top: 0.75rem; line-height: 1.6;">
+            {{ r.text }}
+        </div>
+        <div style="margin-top: 0.75rem;">
+            <a href="/transcripts/{{ r.transcript_id }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                View Full Transcript
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>No results found</h2>
+    <p>Try different keywords or check your spelling</p>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h2>Enter a search term</h2>
+    <p>Search for quotes, topics, or keywords across all transcripts</p>
+</div>
+{% endif %}
+{% endblock %}

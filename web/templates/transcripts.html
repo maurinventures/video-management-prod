@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Transcripts - Video Manager{% endblock %}
+
+{% block content %}
+<h1>Transcripts</h1>
+
+<div style="margin-bottom: 1.5rem;">
+    <a href="/transcripts/search" class="btn">Search All Transcripts</a>
+</div>
+
+{% if transcripts %}
+<div class="grid">
+    {% for t in transcripts %}
+    <a href="/transcripts/{{ t.id }}" class="card" style="text-decoration: none;">
+        <div class="card-title">{{ t.video_title }}</div>
+        <div class="card-meta">
+            {{ t.segment_count }} segments &bull; {{ t.created_at|timestamp }}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>No transcripts yet</h2>
+    <p>Transcribe videos using the CLI to get started</p>
+</div>
+{% endif %}
+{% endblock %}

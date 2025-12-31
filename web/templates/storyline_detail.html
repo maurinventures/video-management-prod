@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ storyline.title }} - Storyline{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/storylines" style="color: #888; text-decoration: none;">&larr; Back to Storylines</a>
+</div>
+
+<h1>{{ storyline.title }}</h1>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="margin-bottom: 1rem;">
+        <strong>Hook:</strong> {{ storyline.hook }}
+    </div>
+    <div style="margin-bottom: 1rem;">
+        <strong>Why it works:</strong> {{ storyline.why_compelling }}
+    </div>
+    <div>
+        <span class="badge badge-info">{{ "%.0f"|format(storyline.estimated_duration) }} seconds</span>
+        <span class="badge badge-success">{{ storyline.clips|length }} clips</span>
+    </div>
+</div>
+
+<h2>Clips</h2>
+
+{% set ns = namespace(timeline=0) %}
+{% for clip in storyline.clips %}
+<div class="clip-card">
+    <div>
+        <span class="clip-number">{{ loop.index }}</span>
+        <strong>{{ "%.1f"|format(ns.timeline) }}s - {{ "%.1f"|format(ns.timeline + clip.duration) }}s</strong>
+        <span style="color: #888;">({{ "%.1f"|format(clip.duration) }}s)</span>
+    </div>
+    <div class="clip-source">
+        Source: {{ clip.video_title }} @ {{ "%.1f"|format(clip.start_time) }}s - {{ "%.1f"|format(clip.end_time) }}s
+    </div>
+    <div class="clip-text">"{{ clip.text }}"</div>
+</div>
+{% set ns.timeline = ns.timeline + clip.duration %}
+{% endfor %}
+
+<div style="margin-top: 2rem; padding: 1.5rem; background: #1a1a1a; border-radius: 12px; border: 1px solid #333;">
+    <h3 style="margin-bottom: 1rem;">Ready to create this video?</h3>
+    <p style="color: #888; margin-bottom: 1rem;">
+        Ask your editor to run: <code style="background: #111; padding: 0.25rem 0.5rem; border-radius: 4px;">python -m scripts.main storylines create {{ storyline.id }}</code>
+    </p>
+</div>
+{% endblock %}

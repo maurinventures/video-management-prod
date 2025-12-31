@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Videos - Video Manager{% endblock %}
+
+{% block content %}
+<h1>Videos</h1>
+
+{% if videos %}
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Duration</th>
+            <th>Transcript</th>
+            <th>Uploaded</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for video in videos %}
+        <tr>
+            <td>
+                <strong>{{ video.filename }}</strong>
+            </td>
+            <td>{{ video.duration|duration }}</td>
+            <td>
+                {% if video.has_transcript %}
+                <span class="badge badge-success">Completed</span>
+                {% else %}
+                <span class="badge badge-pending">Pending</span>
+                {% endif %}
+            </td>
+            <td>{{ video.created_at|timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <h2>No videos yet</h2>
+    <p>Upload videos using the CLI to get started</p>
+</div>
+{% endif %}
+{% endblock %}

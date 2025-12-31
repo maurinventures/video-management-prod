@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ name }} - Edit Script{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/edit-scripts" style="color: #888; text-decoration: none;">&larr; Back to Edit Scripts</a>
+</div>
+
+<h1>{{ name }}</h1>
+
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+    <span class="badge badge-info">{{ clips|length }} clips</span>
+</div>
+
+<h2>Edit Script</h2>
+<div class="card" style="margin-bottom: 2rem;">
+    <pre>{{ content }}</pre>
+</div>
+
+<h2>Clip Files</h2>
+<div class="card">
+    <p style="color: #888; margin-bottom: 1rem;">
+        Import these files into Premiere Pro in order:
+    </p>
+    <ul style="list-style: none; padding: 0;">
+        {% for clip in clips %}
+        <li style="padding: 0.5rem 0; border-bottom: 1px solid #333;">
+            <code>{{ clip }}</code>
+        </li>
+        {% endfor %}
+    </ul>
+    <p style="color: #888; margin-top: 1rem; font-size: 0.9rem;">
+        Files located in: <code>local_clips/{{ name }}/</code>
+    </p>
+</div>
+{% endblock %}

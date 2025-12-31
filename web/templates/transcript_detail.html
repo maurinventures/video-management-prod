@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}{{ video_title }} - Transcript{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/transcripts" style="color: #888; text-decoration: none;">&larr; Back to Transcripts</a>
+</div>
+
+<h1>{{ video_title }}</h1>
+<p style="color: #888; margin-bottom: 2rem;">{{ segments|length }} segments</p>
+
+<div class="segments">
+    {% for seg in segments %}
+    <div class="segment">
+        <span class="segment-time">{{ "%.1f"|format(seg.start) }}s - {{ "%.1f"|format(seg.end) }}s</span>
+        <div class="segment-text">{{ seg.text }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

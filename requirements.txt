@@ -1,0 +1,30 @@
+# AWS SDK
+boto3>=1.34.0
+
+# Database
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.0
+
+# Video Processing
+moviepy>=1.0.3
+ffmpeg-python>=0.2.0
+
+# Transcription (local option)
+openai-whisper>=20231117
+
+# Configuration
+pyyaml>=6.0.1
+
+# Utilities
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+click>=8.1.0
+
+# Logging
+colorlog>=6.8.0
+
+# Web Dashboard
+flask>=3.0.0
+
+# AI/LLM
+openai>=1.0.0

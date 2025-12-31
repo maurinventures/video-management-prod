@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Video Manager{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        nav {
+            background: #1a1a1a;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        nav .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        nav .links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        nav a {
+            color: #888;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        nav a:hover, nav a.active {
+            color: #fff;
+            background: #333;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card:hover {
+            border-color: #555;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-meta {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #4a9eff;
+        }
+
+        .stat-label {
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #1a4d1a;
+            color: #4ade80;
+        }
+
+        .badge-pending {
+            background: #4d4d1a;
+            color: #facc15;
+        }
+
+        .badge-info {
+            background: #1a3d4d;
+            color: #38bdf8;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #4a9eff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #3a8eef;
+        }
+
+        .btn-secondary {
+            background: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            color: #888;
+            font-weight: 500;
+        }
+
+        tr:hover {
+            background: #1a1a1a;
+        }
+
+        .segment {
+            padding: 1rem;
+            border-left: 3px solid #333;
+            margin-bottom: 0.5rem;
+            background: #111;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .segment:hover {
+            border-left-color: #4a9eff;
+        }
+
+        .segment-time {
+            color: #4a9eff;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .segment-text {
+            margin-top: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .clip-card {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .clip-number {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            background: #4a9eff;
+            color: #fff;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-right: 0.75rem;
+        }
+
+        .clip-source {
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .clip-text {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #1a1a1a;
+            border-radius: 6px;
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        pre {
+            background: #111;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">Video Manager</a>
+        <div class="links">
+            <a href="/videos" {% if request.path == '/videos' %}class="active"{% endif %}>Videos</a>
+            <a href="/transcripts" {% if request.path.startswith('/transcripts') %}class="active"{% endif %}>Transcripts</a>
+            <a href="/storylines" {% if request.path.startswith('/storylines') %}class="active"{% endif %}>Storylines</a>
+            <a href="/edit-scripts" {% if request.path.startswith('/edit-scripts') %}class="active"{% endif %}>Edit Scripts</a>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
