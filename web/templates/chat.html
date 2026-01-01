@@ -418,16 +418,22 @@
             clips.forEach((clip, i) => {
                 const verified = clip.verified;
                 const duration = clip.duration || (clip.end_time - clip.start_time);
+                const eventInfo = clip.event_date && clip.event_date !== 'Unknown'
+                    ? `${clip.event_date} | ${clip.event_name || ''}`
+                    : (clip.event_name || '');
                 html += `
                     <div class="clip-item ${verified ? 'verified' : 'unverified'}">
                         <div class="clip-header">
-                            <span class="clip-source">${i + 1}. ${clip.video_title || 'Unknown'}</span>
+                            <span class="clip-source">${i + 1}. ${clip.speaker || 'Unknown'}</span>
                             <span>
-                                <span class="clip-time">${clip.start_time?.toFixed(1)}s - ${clip.end_time?.toFixed(1)}s (${duration.toFixed(1)}s)</span>
                                 <span class="clip-badge ${verified ? 'verified' : 'unverified'}">${verified ? 'Verified' : 'Unverified'}</span>
                             </span>
                         </div>
+                        <div class="clip-meta" style="color: #888; font-size: 0.8rem; margin-bottom: 0.5rem;">
+                            ${eventInfo ? eventInfo + ' | ' : ''}${clip.start_time?.toFixed(1)}s - ${clip.end_time?.toFixed(1)}s (${duration.toFixed(1)}s)
+                        </div>
                         <div class="clip-text">"${clip.text || ''}"</div>
+                        <div style="color: #666; font-size: 0.75rem; margin-top: 0.25rem;">${clip.video_title || ''}</div>
                     </div>`;
             });
 

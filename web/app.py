@@ -275,15 +275,36 @@ def search_transcripts_for_context(query: str, limit: int = 500):
     # Extract keywords from query
     keywords = re.findall(r'\b\w{4,}\b', query.lower())
 
+    # Extract year filters from query (e.g., "2020", "2023", "from 2020")
+    year_pattern = re.findall(r'\b(19\d{2}|20\d{2})\b', query)
+    min_year = None
+    if year_pattern:
+        min_year = min(int(y) for y in year_pattern)
+
+    # Check for "recent" or "latest" keywords
+    if any(w in query.lower() for w in ['recent', 'latest', 'new', 'newest']):
+        min_year = 2020
+
     results = []
     with DatabaseSession() as db_session:
-        # Get all videos with their transcripts
+        # Get all videos with their full metadata
         videos = db_session.query(Video).all()
         video_map = {str(v.id): {
             'filename': v.filename,
             'speaker': v.speaker or 'Unknown',
-            'event_name': v.event_name
+            'event_name': v.event_name or 'Unknown',
+            'event_date': v.event_date,
+            'year': v.event_date.year if v.event_date else None
         } for v in videos}
+
+        # Filter videos by year if specified
+        if min_year:
+            filtered_video_ids = {
+                str(v.id) for v in videos
+                if v.event_date and v.event_date.year >= min_year
+            }
+        else:
+            filtered_video_ids = set(video_map.keys())
 
         # Search for matching segments
         for keyword in keywords[:5]:  # Limit keywords to search
@@ -292,32 +313,44 @@ def search_transcripts_for_context(query: str, limit: int = 500):
             ).filter(
                 TranscriptSegment.text.ilike(f'%{keyword}%'),
                 Transcript.status == 'completed'
-            ).limit(100).all()
+            ).limit(150).all()
 
             for seg in segments:
                 transcript = db_session.query(Transcript).filter(
                     Transcript.id == seg.transcript_id
                 ).first()
-                if transcript:
+                if transcript and str(transcript.video_id) in filtered_video_ids:
                     video_info = video_map.get(str(transcript.video_id), {})
+                    event_date = video_info.get('event_date')
+                    date_str = event_date.strftime('%Y-%m-%d') if event_date else 'Unknown date'
+
                     results.append({
                         'video_id': str(transcript.video_id),
                         'video_title': video_info.get('filename', 'Unknown'),
                         'speaker': video_info.get('speaker', 'Unknown'),
+                        'event_name': video_info.get('event_name', 'Unknown'),
+                        'event_date': date_str,
+                        'year': video_info.get('year'),
                         'start': float(seg.start_time),
                         'end': float(seg.end_time),
                         'text': seg.text,
                         'segment_id': str(seg.id)
                     })
 
-        # If no keyword matches, get a sample of recent transcripts
+        # If no keyword matches, get a sample of transcripts (respecting year filter)
         if not results:
             transcripts = db_session.query(Transcript).filter(
                 Transcript.status == 'completed'
-            ).limit(20).all()
+            ).all()
+
+            # Filter by year
+            transcripts = [t for t in transcripts if str(t.video_id) in filtered_video_ids][:20]
 
             for t in transcripts:
                 video_info = video_map.get(str(t.video_id), {})
+                event_date = video_info.get('event_date')
+                date_str = event_date.strftime('%Y-%m-%d') if event_date else 'Unknown date'
+
                 segments = db_session.query(TranscriptSegment).filter(
                     TranscriptSegment.transcript_id == t.id
                 ).order_by(TranscriptSegment.start_time).limit(30).all()
@@ -328,6 +361,9 @@ def search_transcripts_for_context(query: str, limit: int = 500):
                             'video_id': str(t.video_id),
                             'video_title': video_info.get('filename', 'Unknown'),
                             'speaker': video_info.get('speaker', 'Unknown'),
+                            'event_name': video_info.get('event_name', 'Unknown'),
+                            'event_date': date_str,
+                            'year': video_info.get('year'),
                             'start': float(seg.start_time),
                             'end': float(seg.end_time),
                             'text': seg.text,
@@ -384,11 +420,14 @@ def validate_clips_against_database(clips: list) -> list:
                         actual_text = ' '.join(s.text for s in segments)
                         actual_start = float(segments[0].start_time)
                         actual_end = float(segments[-1].end_time)
+                        event_date = video.event_date.strftime('%Y-%m-%d') if video.event_date else 'Unknown'
 
                         validated.append({
                             'video_id': str(video.id),
                             'video_title': video.filename,
                             'speaker': video.speaker or 'Unknown',
+                            'event_name': video.event_name or 'Unknown',
+                            'event_date': event_date,
                             'start_time': actual_start,
                             'end_time': actual_end,
                             'duration': actual_end - actual_start,
@@ -417,13 +456,33 @@ def validate_clips_against_database(clips: list) -> list:
 def generate_script_with_ai(user_message: str, transcript_context: list, conversation_history: list):
     """Generate a script using AI with verified transcript data."""
 
-    # Build context from transcripts - group by video for better context
+    # Build summary of available content
+    speakers = set()
+    events = set()
+    years = set()
+    for t in transcript_context:
+        speakers.add(t.get('speaker', 'Unknown'))
+        events.add(t.get('event_name', 'Unknown'))
+        if t.get('year'):
+            years.add(t['year'])
+
+    summary = f"""AVAILABLE CONTENT SUMMARY:
+- Speakers: {', '.join(sorted(speakers))}
+- Events: {', '.join(sorted(events)[:10])}{'...' if len(events) > 10 else ''}
+- Years: {min(years) if years else 'N/A'} to {max(years) if years else 'N/A'}
+- Total clips available: {len(transcript_context)}
+"""
+
+    # Build context from transcripts with full metadata
     context_text = ""
     for t in transcript_context[:300]:  # Limit context size
-        context_text += f"[{t['video_title']} | {t['start']:.1f}s-{t['end']:.1f}s | ID:{t['video_id']}]\n"
+        context_text += f"[{t.get('event_date', 'Unknown')} | {t.get('event_name', 'Unknown')} | {t.get('speaker', 'Unknown')}]\n"
+        context_text += f"Video: {t['video_title']} | {t['start']:.1f}s-{t['end']:.1f}s | ID:{t['video_id']}\n"
         context_text += f'"{t["text"]}"\n\n'
 
-    system_prompt = """You are an expert video editor and storyteller. Your job is to create COHERENT, MEANINGFUL scripts by combining clips from available footage.
+    system_prompt = f"""You are an expert video editor and storyteller. Your job is to create COHERENT, MEANINGFUL scripts by combining clips from available footage.
+
+{summary}
 
 CRITICAL - NARRATIVE COHERENCE:
 - The script must tell a STORY or make a POINT that flows logically
