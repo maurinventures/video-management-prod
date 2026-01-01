@@ -298,11 +298,12 @@ def search_transcripts_for_context(query: str, limit: int = 800):
             'year': v.event_date.year if v.event_date else None
         } for v in videos}
 
-        # Filter videos by year if specified
+        # Filter videos by year if specified - but be inclusive
+        # Include videos without dates to avoid missing content
         if min_year:
             filtered_video_ids = {
                 str(v.id) for v in videos
-                if v.event_date and v.event_date.year >= min_year
+                if (v.event_date and v.event_date.year >= min_year) or not v.event_date
             }
         else:
             filtered_video_ids = set(video_map.keys())
@@ -481,62 +482,57 @@ def generate_script_with_ai(user_message: str, transcript_context: list, convers
         context_text += f"Video: {t['video_title']} | {t['start']:.1f}s-{t['end']:.1f}s | ID:{t['video_id']}\n"
         context_text += f'"{t["text"]}"\n\n'
 
-    system_prompt = f"""You are a master video editor and storyteller creating compelling short videos. Your goal: craft scripts that feel like ONE cohesive piece, not random clips stitched together.
+    system_prompt = f"""You are a master video editor creating short-form content. Your job: find the BEST clips that tell a cohesive story.
 
 {summary}
 
-YOUR MISSION:
-Create a script that flows so naturally it sounds like it was written as one speech. The viewer should never feel jarring transitions.
+CRITICAL RULES FOR CLIP SELECTION:
+1. COMPLETE THOUGHTS ONLY - Each clip must be a complete sentence or thought that makes sense on its own. Never use clips that start mid-sentence or end abruptly.
 
-STORYTELLING PRINCIPLES:
-1. THEME UNITY - Every clip must serve ONE central message
-2. EMOTIONAL ARC - Build tension, then release it
-3. SMOOTH TRANSITIONS - The last words of one clip should naturally lead to the next
-4. VARIETY - Mix emotional intensity (quiet moments with powerful ones)
-5. MEMORABLE ENDING - The final clip should be the most impactful
+2. QUALITY OVER QUANTITY - It's better to have 3 perfect clips than 6 mediocre ones. Only use clips that are genuinely powerful.
 
-SCRIPT STRUCTURE (adjust based on requested duration):
-- HOOK (15-20%): A provocative statement or question that grabs attention
-- BUILD (40-50%): Layer supporting ideas, each building on the last
-- CLIMAX (20-25%): The most powerful, emotional moment
-- RESOLUTION (10-15%): Land with a memorable, quotable line
+3. NATURAL FLOW - When read aloud, the script should sound like one coherent speech. Test: could someone recite this smoothly?
 
-TECHNICAL REQUIREMENTS:
-- ONLY use clips from the transcript data provided
-- Use EXACT video_id, start_time, end_time, and text from the data
-- Aim for 4-7 clips for a 60-second video
-- Each clip should be 6-15 seconds for good pacing
-- If clips don't naturally connect, DON'T force them together
+4. EXACT DATA - Use ONLY the exact text, video_id, start_time, and end_time from the data below. Do not paraphrase or approximate.
+
+SCRIPT STRUCTURE:
+- OPEN with something attention-grabbing (a bold claim, question, or universal truth)
+- BUILD with supporting ideas (each clip should add to the message)
+- CLOSE with the most memorable, quotable line
+
+BAD EXAMPLE (don't do this):
+"Leadership been impacted by two things?" - This is mid-sentence, sounds awkward
+
+GOOD EXAMPLE:
+"True leadership means having the courage to make difficult decisions." - Complete thought, powerful statement
 
 OUTPUT FORMAT:
-Present the script as clean, readable text first:
+First, the readable script:
 
 ---
-**[TITLE]**
+**[COMPELLING TITLE]**
 
-"[First clip text, edited if needed for flow]"
+"[Complete, powerful opening statement]"
 
-"[Second clip text...]"
+"[Supporting idea that builds on the theme]"
 
-"[Continue building...]"
-
-"[Powerful closing line]"
+"[Strong closing that lands the message]"
 ---
 
-Brief explanation of why this works (1-2 sentences).
+Why this works: [1 sentence]
 
-Then the technical JSON:
+Then JSON with exact data:
 ```json
 {{
   "title": "...",
   "total_duration": 60,
   "clips": [
-    {{"video_id": "exact-uuid-from-data", "video_title": "...", "start_time": 10.0, "end_time": 22.0, "text": "exact quote from data"}}
+    {{"video_id": "exact-uuid", "video_title": "...", "start_time": 10.0, "end_time": 22.0, "text": "exact text from data"}}
   ]
 }}
 ```
 
-TRANSCRIPT DATA TO USE:
+AVAILABLE CLIPS:
 """ + context_text
 
     # Build messages
