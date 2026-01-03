@@ -1,5 +1,6 @@
 # Secrets - NEVER commit
 config/secrets.yaml
+config/credentials.yaml
 *.pem
 *.key
 

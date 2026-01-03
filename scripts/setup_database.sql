@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS videos (
     filename VARCHAR(500) NOT NULL,
     original_filename VARCHAR(500) NOT NULL,
     s3_key VARCHAR(1000) NOT NULL UNIQUE,
-    s3_bucket VARCHAR(255) NOT NULL DEFAULT 'per-aspera-brain',
+    s3_bucket VARCHAR(255) NOT NULL DEFAULT 'mv-brain',
     file_size_bytes BIGINT,
     duration_seconds DECIMAL(10, 2),
     resolution VARCHAR(50),

@@ -4,7 +4,7 @@
 aws:
   region: us-east-1
   s3:
-    bucket: per-aspera-brain
+    bucket: mv-brain
     prefixes:
       videos: videos/
       transcripts: transcripts/
