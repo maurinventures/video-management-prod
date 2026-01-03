@@ -612,6 +612,8 @@ def search_audio_for_context(query: str, limit: int = 100):
         key = (r['audio_id'], r['start'], r['end'])
         if key not in seen:
             seen.add(key)
+            # Convert matched_keywords set to list for JSON serialization
+            r['matched_keywords'] = list(r.get('matched_keywords', set()))
             unique_results.append(r)
             if len(unique_results) >= limit:
                 break
