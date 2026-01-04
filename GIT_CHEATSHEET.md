@@ -91,26 +91,23 @@ git checkout filename
 After pushing to GitHub, deploy to the live server:
 
 ```bash
-ssh brain "cd ~/video-management && git pull && sudo systemctl restart mv-internal"
-```
-
-Or step by step:
-```bash
 # Connect to server
-ssh brain
+ssh -i ~/Documents/keys/per_aspera/per-aspera-key.pem ec2-user@54.198.253.138
 
-# Go to project folder
-cd ~/video-management
+# Pull latest code
+cd ~/video-management && git pull
 
-# Get latest code
-git pull
+# Sync to production directory
+rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__' --exclude='*.pyc'
 
 # Restart the app
-sudo systemctl restart mv-internal
+sudo systemctl restart mv-internal.service
 
 # Check it's running
-sudo systemctl status mv-internal
+sudo systemctl status mv-internal.service
 ```
+
+See `INFRASTRUCTURE.md` for full deployment details.
 
 ---
 
