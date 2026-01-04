@@ -2535,6 +2535,52 @@ def api_update_conversation(conversation_id):
         return jsonify({'success': True})
 
 
+@app.route('/api/conversations/<conversation_id>/generate-title', methods=['POST'])
+def api_generate_conversation_title(conversation_id):
+    """Generate a title for a conversation using AI based on first message."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.json or {}
+    first_message = data.get('message', '')
+
+    if not first_message:
+        return jsonify({'error': 'No message provided'}), 400
+
+    with DatabaseSession() as db_session:
+        conversation = db_session.query(Conversation).filter(
+            Conversation.id == UUID(conversation_id),
+            Conversation.user_id == UUID(session['user_id'])
+        ).first()
+
+        if not conversation:
+            return jsonify({'error': 'Conversation not found'}), 404
+
+        # Generate title using Claude (fast, cheap)
+        try:
+            client = anthropic.Anthropic()
+            response = client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=50,
+                messages=[{
+                    "role": "user",
+                    "content": f"Generate a very short (2-5 words) title for a chat that starts with this message. Return ONLY the title, nothing else:\n\n{first_message[:500]}"
+                }]
+            )
+            title = response.content[0].text.strip().strip('"\'')
+            # Limit length
+            if len(title) > 60:
+                title = title[:57] + '...'
+        except Exception as e:
+            # Fallback to truncated message
+            title = first_message[:50] + ('...' if len(first_message) > 50 else '')
+
+        conversation.title = title
+        db_session.commit()
+
+        return jsonify({'success': True, 'title': title})
+
+
 @app.route('/api/conversations/<conversation_id>', methods=['DELETE'])
 def api_delete_conversation(conversation_id):
     """Delete a conversation."""

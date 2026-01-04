@@ -4382,6 +4382,12 @@ async function createNewConversation(projectId = null) {
         currentProject = data.project || null;
         history = [];
         clips = [];
+
+        // Auto-expand project folder in sidebar when creating project chat
+        if (currentProjectId) {
+            localStorage.setItem(`recents_project_${currentProjectId}`, 'true');
+        }
+
         renderConversations();
         clearChat();
 
@@ -4456,6 +4462,21 @@ async function renameConversation(conversationId) {
         }
     } catch (e) {
         console.error('Failed to rename:', e);
+    }
+}
+
+async function generateConversationTitle(conversationId, firstMessage) {
+    try {
+        const res = await fetch(`/api/conversations/${conversationId}/generate-title`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: firstMessage })
+        });
+        const data = await res.json();
+        return data.title || null;
+    } catch (e) {
+        console.error('Failed to generate title:', e);
+        return null;
     }
 }
 
@@ -5222,11 +5243,22 @@ async function sendMessage() {
                 // Update message count
                 conv.message_count = (conv.message_count || 0) + 2; // user + assistant
 
-                // Update title if it was auto-named
+                // Generate AI title if this is the first message
                 if (conv.title === 'New Chat') {
-                    conv.title = msg.substring(0, 50) + (msg.length > 50 ? '...' : '');
+                    // Set temporary title immediately for responsiveness
+                    conv.title = msg.substring(0, 30) + (msg.length > 30 ? '...' : '');
+                    renderConversations();
+
+                    // Generate better title with AI in background
+                    generateConversationTitle(currentConversationId, msg).then(title => {
+                        if (title) {
+                            conv.title = title;
+                            renderConversations();
+                        }
+                    });
+                } else {
+                    renderConversations();
                 }
-                renderConversations();
             }
         }
     } catch (e) {
