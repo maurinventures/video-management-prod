@@ -95,19 +95,20 @@ video-management-prod/
 │   ├── transcribe.py       # AWS Transcribe integration
 │   ├── upload_video.py     # S3 video upload
 │   ├── batch_upload.py     # Batch video processing
+│   ├── run_batch_upload.py # Batch upload runner script
+│   ├── run_batch_transcribe.py # Batch transcription runner
 │   ├── clip_video.py       # Video clipping functionality
 │   ├── compile_video.py    # Video compilation
 │   ├── generate_thumbnails.py  # Thumbnail generation
 │   ├── storylines.py       # Storyline management
 │   ├── main.py             # CLI entry point
+│   ├── aws_commands.sh     # AWS CLI helper commands
 │   └── setup_database.sql  # Database schema setup
 ├── config/
 │   ├── settings.yaml       # App settings (committed)
 │   ├── credentials.yaml.enc    # Encrypted credentials
 │   └── credentials.yaml.template  # Credential template
 ├── migrations/             # SQL migration files (004-009)
-├── run_batch_upload.py     # Batch upload runner
-├── run_batch_transcribe.py # Batch transcription runner
 ├── requirements.txt        # Python dependencies
 ├── INFRASTRUCTURE.md       # Server/deployment docs
 └── GIT_CHEATSHEET.md       # Git workflow reference

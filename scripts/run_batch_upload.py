@@ -8,7 +8,8 @@ from pathlib import Path
 from datetime import datetime
 import sys
 
-sys.path.insert(0, '/Users/josephs./Desktop/video-management')
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.config_loader import get_config
 from scripts.db import DatabaseSession, Video

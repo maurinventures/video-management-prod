@@ -11,7 +11,8 @@ from pathlib import Path
 # Fix SSL for Whisper model download
 ssl._create_default_https_context = ssl._create_unverified_context
 
-sys.path.insert(0, '/Users/josephs./Desktop/video-management')
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.db import DatabaseSession, Video, Transcript, TranscriptSegment
 from scripts.config_loader import get_config
