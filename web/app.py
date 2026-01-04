@@ -2403,6 +2403,12 @@ def api_list_conversations():
                 'id': str(c.id),
                 'title': c.title,
                 'video_id': str(c.video_id) if c.video_id else None,
+                'project_id': str(c.project_id) if c.project_id else None,
+                'project': {
+                    'id': str(c.project.id),
+                    'name': c.project.name,
+                    'color': c.project.color
+                } if c.project else None,
                 'created_at': c.created_at.isoformat(),
                 'updated_at': c.updated_at.isoformat(),
                 'message_count': len(c.messages)

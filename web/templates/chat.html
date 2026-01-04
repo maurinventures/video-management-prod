@@ -409,6 +409,67 @@
         height: 14px;
     }
 
+    /* Recents project groups */
+    .recents-project-group {
+        margin-bottom: 0.25rem;
+    }
+
+    .recents-project-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .recents-project-header:hover {
+        background: #f0efea;
+    }
+
+    .recents-project-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .recents-project-name {
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: #1a1a1a;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .recents-project-chevron {
+        width: 14px;
+        height: 14px;
+        color: #888;
+        transition: transform 0.2s;
+        flex-shrink: 0;
+    }
+
+    .recents-project-header.expanded .recents-project-chevron {
+        transform: rotate(180deg);
+    }
+
+    .recents-project-items {
+        display: none;
+        padding-left: 0.5rem;
+    }
+
+    .recents-project-items.expanded {
+        display: block;
+    }
+
+    .conversation-item.nested {
+        padding-left: 1.25rem;
+    }
+
     .sidebar-footer {
         padding: 0.75rem 1rem;
         border-top: 1px solid #e5e4df;
@@ -3889,8 +3950,54 @@ async function loadConversations() {
 }
 
 function renderConversations() {
-    conversationsList.innerHTML = conversations.map(conv => `
-        <div class="conversation-item ${conv.id === currentConversationId ? 'active' : ''}"
+    // Group conversations by project
+    const projectGroups = {};
+    const ungrouped = [];
+
+    conversations.forEach(conv => {
+        if (conv.project) {
+            if (!projectGroups[conv.project.id]) {
+                projectGroups[conv.project.id] = {
+                    project: conv.project,
+                    conversations: []
+                };
+            }
+            projectGroups[conv.project.id].conversations.push(conv);
+        } else {
+            ungrouped.push(conv);
+        }
+    });
+
+    let html = '';
+
+    // Render project groups
+    Object.values(projectGroups).forEach(group => {
+        const isExpanded = localStorage.getItem(`recents_project_${group.project.id}`) !== 'false';
+        html += `
+            <div class="recents-project-group">
+                <div class="recents-project-header ${isExpanded ? 'expanded' : ''}" onclick="toggleRecentsProject('${group.project.id}')">
+                    <span class="recents-project-dot" style="background: ${group.project.color || '#d97757'}"></span>
+                    <span class="recents-project-name">${escapeHtml(group.project.name)}</span>
+                    <svg class="recents-project-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <div class="recents-project-items ${isExpanded ? 'expanded' : ''}" id="recents-project-${group.project.id}">
+                    ${group.conversations.map(conv => renderConversationItem(conv)).join('')}
+                </div>
+            </div>
+        `;
+    });
+
+    // Render ungrouped conversations
+    ungrouped.forEach(conv => {
+        html += renderConversationItem(conv);
+    });
+
+    conversationsList.innerHTML = html;
+}
+
+function renderConversationItem(conv) {
+    return `
+        <div class="conversation-item ${conv.id === currentConversationId ? 'active' : ''} ${conv.project ? 'nested' : ''}"
              onclick="loadConversation('${conv.id}')"
              data-id="${conv.id}">
             <div style="flex: 1; min-width: 0;">
@@ -3906,7 +4013,15 @@ function renderConversations() {
                 </button>
             </div>
         </div>
-    `).join('');
+    `;
+}
+
+function toggleRecentsProject(projectId) {
+    const items = document.getElementById(`recents-project-${projectId}`);
+    const header = items.previousElementSibling;
+    const isExpanded = items.classList.toggle('expanded');
+    header.classList.toggle('expanded', isExpanded);
+    localStorage.setItem(`recents_project_${projectId}`, isExpanded);
 }
 
 function escapeHtml(text) {
