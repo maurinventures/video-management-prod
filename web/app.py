@@ -1575,6 +1575,14 @@ def chat():
     return render_template('chat.html')
 
 
+@app.route('/new')
+def new_chat():
+    """New chat page - shows welcome screen for starting a new conversation."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('chat.html', is_new_chat=True)
+
+
 @app.route('/project/<project_id>')
 def project_page(project_id):
     """Project detail page."""
