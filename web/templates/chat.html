@@ -262,6 +262,7 @@
         max-height: 200px;
         min-height: 32px;
         overflow-y: auto;
+        scrollbar-gutter: stable;
     }
 
     .project-item {
@@ -353,6 +354,7 @@
         flex: 1;
         min-height: 100px;
         overflow-y: auto;
+        scrollbar-gutter: stable;
         padding: 0 0.5rem;
     }
 
@@ -3915,6 +3917,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateWelcomeGreeting();
         if (PROJECT_ID) {
             currentProjectId = PROJECT_ID;
+            // Fetch full project object for badge display
+            try {
+                const projRes = await fetch(`/api/projects/${PROJECT_ID}`);
+                if (projRes.ok) {
+                    const projData = await projRes.json();
+                    currentProject = projData;
+                    // Show welcome screen project badge
+                    const projectBadge = document.getElementById('welcomeProjectBadge');
+                    if (projectBadge) {
+                        document.getElementById('welcomeProjectName').textContent = currentProject.name;
+                        document.getElementById('welcomeProjectDot').style.background = currentProject.color || '#d97757';
+                        projectBadge.classList.add('visible');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load project:', e);
+            }
         }
     }
 
