@@ -80,3 +80,11 @@ openssl aes-256-cbc -salt -pbkdf2 -in config/credentials.yaml -out config/creden
 - Commit changes with clear messages
 - Push to `main` branch
 - Deploy after pushing
+
+## After Every Task
+
+Append a summary to `/docs/CHANGELOG.md` with:
+- What you changed and why
+- Files modified
+- Any issues encountered
+- Current state of the feature
