@@ -13,7 +13,10 @@ Never use localhost for testing. After making changes, deploy to the EC2 server.
 
 ### Deploy Commands
 ```bash
-# SSH to server
+# SSH to server (using alias from ~/.ssh/config)
+ssh mv-internal
+
+# Or with full command:
 ssh -i ~/Documents/keys/per_aspera/per-aspera-key.pem ec2-user@54.198.253.138
 
 # Pull and sync
@@ -26,7 +29,7 @@ sudo systemctl restart mv-internal.service
 
 Or as a one-liner:
 ```bash
-ssh -i ~/Documents/keys/per_aspera/per-aspera-key.pem ec2-user@54.198.253.138 "cd ~/video-management && git pull && rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' && sudo systemctl restart mv-internal.service"
+ssh mv-internal "cd ~/video-management && git pull && rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' && sudo systemctl restart mv-internal.service"
 ```
 
 ## Secrets
