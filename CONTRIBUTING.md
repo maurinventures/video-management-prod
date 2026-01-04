@@ -195,10 +195,21 @@ The app uses PostgreSQL (AWS RDS). Key tables:
 
 **Users & Collaboration:**
 - `users` - User accounts with 2FA and email verification
+- `internal_users` - Internal team user accounts
 - `conversations` - Chat sessions
 - `chat_messages` - Messages in conversations
 - `chat_participants` - Conversation members
 - `clip_comments` - Comments on clips
+
+**Email & Contacts:**
+- `contacts` - Contact records
+- `emails` - Email records
+- `test_emails` - Test email data
+
+**Twitter/X Integration:**
+- `x_users` - X/Twitter user profiles
+- `x_user_metrics` - X/Twitter engagement metrics
+- `tweets_enrichments` - Enriched tweet data
 
 **System:**
 - `processing_jobs` - Background job tracking
