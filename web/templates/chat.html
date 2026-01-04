@@ -194,9 +194,96 @@
     }
 
     .message {
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
 
+    /* User messages - right aligned, bubble style */
+    .message-user {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+    }
+
+    .message-user .message-bubble {
+        max-width: 70%;
+        background: #1a1a1a;
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 18px 18px 4px 18px;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+    }
+
+    .message-user .message-bubble p {
+        margin: 0;
+    }
+
+    /* Assistant messages - left aligned, full width */
+    .message-assistant {
+        margin-bottom: 1.5rem;
+    }
+
+    .message-assistant .message-body {
+        color: #374151;
+        line-height: 1.7;
+        font-size: 0.9375rem;
+    }
+
+    /* Message actions - Claude style */
+    .message-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-top: 0.75rem;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    .message-assistant:hover .message-actions {
+        opacity: 1;
+    }
+
+    .message-action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: #888;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+
+    .message-action-btn:hover {
+        background: #f0efea;
+        color: #1a1a1a;
+    }
+
+    .message-action-btn:active {
+        transform: scale(0.95);
+    }
+
+    .message-action-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .message-action-btn.active-good {
+        color: #22c55e;
+    }
+
+    .message-action-btn.active-bad {
+        color: #ef4444;
+    }
+
+    .message-action-btn.copied {
+        color: #22c55e;
+    }
+
+    /* Legacy styles - keeping for compatibility */
     .message-header {
         display: flex;
         align-items: center;
@@ -1729,11 +1816,7 @@
 <!-- Main Chat Area -->
 <div class="chat-main">
     <div class="chat-messages" id="chatMessages">
-        <div class="message">
-            <div class="message-header">
-                <div class="avatar avatar-assistant">M</div>
-                <span class="message-name">MV Internal</span>
-            </div>
+        <div class="message-assistant">
             <div class="message-body">
                 <p>I can help you create video scripts from your library of <strong>177 transcribed videos</strong>.</p>
                 <p>Tell me what you're looking for:</p>
@@ -1988,11 +2071,7 @@ async function deleteConversation(conversationId) {
 
 function clearChat() {
     chatMessages.innerHTML = `
-        <div class="message">
-            <div class="message-header">
-                <div class="avatar avatar-assistant">M</div>
-                <span class="message-name">MV Internal</span>
-            </div>
+        <div class="message-assistant">
             <div class="message-body">
                 <p>I can help you create video scripts from your library of <strong>177 transcribed videos</strong>.</p>
                 <p>Tell me what you're looking for:</p>
@@ -2141,14 +2220,22 @@ function format(text) {
 
 function addMsg(content, isUser, clipData = [], ctx = 0, audioClipData = []) {
     const div = document.createElement('div');
-    div.className = 'message';
+    const msgId = 'msg-' + Date.now();
 
-    let html = `
-        <div class="message-header">
-            <div class="avatar avatar-${isUser ? 'user' : 'assistant'}">${isUser ? 'Y' : 'M'}</div>
-            <span class="message-name">${isUser ? 'You' : 'MV Internal'}</span>
-        </div>
-        <div class="message-body">${format(content)}`;
+    if (isUser) {
+        // User message - right aligned bubble
+        div.className = 'message-user';
+        div.innerHTML = `<div class="message-bubble">${format(content)}</div>`;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return;
+    }
+
+    // Assistant message - left aligned, full width
+    div.className = 'message-assistant';
+    div.id = msgId;
+
+    let html = `<div class="message-body">${format(content)}`;
 
     if (!isUser && clipData.length > 0) {
         clips = clipData;
@@ -2264,28 +2351,33 @@ function addMsg(content, isUser, clipData = [], ctx = 0, audioClipData = []) {
         html += `<div class="context-note">Searched ${ctx.toLocaleString()} segments</div>`;
     }
 
-    // Add feedback buttons for assistant messages with clips
-    if (!isUser && clipData.length > 0) {
-        const feedbackId = 'feedback-' + Date.now();
-        html += `
-            <div class="feedback-section" id="${feedbackId}">
-                <span style="font-size: 0.75rem; color: #888;">Was this helpful?</span>
-                <button class="feedback-btn" onclick="sendFeedback('${feedbackId}', 1, this)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                    </svg>
-                    Good
-                </button>
-                <button class="feedback-btn" onclick="sendFeedback('${feedbackId}', -1, this)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
-                    </svg>
-                    Needs work
-                </button>
-            </div>`;
-    }
+    // Add message action buttons for all assistant messages
+    const feedbackId = 'feedback-' + Date.now();
+    const hasClips = clipData.length > 0;
+    html += `</div>
+        <div class="message-actions">
+            <button class="message-action-btn" onclick="copyMessageContent('${msgId}')" title="Copy">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M12.5 3C13.3284 3 14 3.67157 14 4.5V6H15.5C16.3284 6 17 6.67157 17 7.5V15.5C17 16.3284 16.3284 17 15.5 17H7.5C6.67157 17 6 16.3284 6 15.5V14H4.5C3.67157 14 3 13.3284 3 12.5V4.5C3 3.67157 3.67157 3 4.5 3H12.5ZM14 12.5C14 13.3284 13.3284 14 12.5 14H7V15.5C7 15.7761 7.22386 16 7.5 16H15.5C15.7761 16 16 15.7761 16 15.5V7.5C16 7.22386 15.7761 7 15.5 7H14V12.5ZM4.5 4C4.22386 4 4 4.22386 4 4.5V12.5C4 12.7761 4.22386 13 4.5 13H12.5C12.7761 13 13 12.7761 13 12.5V4.5C13 4.22386 12.7761 4 12.5 4H4.5Z"/>
+                </svg>
+            </button>
+            <button class="message-action-btn" onclick="sendFeedback('${feedbackId}', 1, this)" title="Good response" ${hasClips ? '' : 'style="display:none;"'}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.56055 2C11.1381 2.00009 12.3211 3.44332 12.0117 4.99023L11.6094 7H13.8438C15.5431 7 16.836 8.52594 16.5566 10.2021L15.876 14.2842C15.6148 15.8513 14.2586 17 12.6699 17H4.5C3.67157 17 3 16.3284 3 15.5V9.23828C3.00013 8.57996 3.4294 7.99838 4.05859 7.80469L5.19824 7.4541L5.33789 7.40723C6.02983 7.15302 6.59327 6.63008 6.89746 5.9541L8.41113 2.58984L8.48047 2.46094C8.66235 2.17643 8.97898 2.00002 9.32324 2H9.56055ZM7.80957 6.36523C7.39486 7.2867 6.62674 7.99897 5.68359 8.3457L5.49219 8.41016L4.35254 8.76074C4.14305 8.82539 4.00013 9.01904 4 9.23828V15.5C4 15.7761 4.22386 16 4.5 16H12.6699C13.7697 16 14.7087 15.2049 14.8896 14.1201L15.5703 10.0381C15.7481 8.97141 14.9251 8 13.8438 8H11C10.8503 8 10.7083 7.9331 10.6133 7.81738C10.5184 7.70164 10.4805 7.54912 10.5098 7.40234L11.0312 4.79395C11.2167 3.86589 10.507 3.00009 9.56055 3H9.32324L7.80957 6.36523Z"/>
+                </svg>
+            </button>
+            <button class="message-action-btn" onclick="sendFeedback('${feedbackId}', -1, this)" title="Bad response" ${hasClips ? '' : 'style="display:none;"'}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M12.6699 3C14.2586 3 15.6148 4.14871 15.876 5.71582L16.5566 9.79785C16.836 11.4741 15.5431 13 13.8438 13H11.6094L12.0117 15.0098C12.3211 16.5567 11.1381 17.9999 9.56055 18H9.32324C8.97898 18 8.66235 17.8236 8.48047 17.5391L8.41113 17.4102L6.89746 14.0459C6.59327 13.3699 6.02983 12.847 5.33789 12.5928L5.19824 12.5459L4.05859 12.1953C3.4294 12.0016 3.00013 11.42 3 10.7617V4.5C3 3.67157 3.67157 3 4.5 3H12.6699ZM4.5 4C4.22386 4 4 4.22386 4 4.5V10.7617C4.00013 10.981 4.14305 11.1746 4.35254 11.2393L5.49219 11.5898L5.68359 11.6543C6.62674 12.001 7.39486 12.7133 7.80957 13.6348L9.32324 17H9.56055C10.507 16.9999 11.2167 16.1341 11.0312 15.2061L10.5098 12.5977C10.4805 12.4509 10.5184 12.2984 10.6133 12.1826C10.7083 12.0669 10.8503 12 11 12H13.8438C14.9251 12 15.7481 11.0286 15.5703 9.96191L14.8896 5.87988C14.7087 4.79508 13.7697 4 12.6699 4H4.5Z"/>
+                </svg>
+            </button>
+            <button class="message-action-btn" onclick="retryLastMessage()" title="Retry">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.3857 2.50977C14.3486 2.71054 17.5 5.98724 17.5 10C17.5 14.1421 14.1421 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 7.54619 3.67878 5.3677 5.49902 4H3C2.72386 4 2.5 3.77614 2.5 3.5C2.5 3.22386 2.72386 3 3 3H6.5C6.63261 3 6.75975 3.05272 6.85352 3.14648C6.92392 3.21689 6.97106 3.30611 6.99023 3.40234L7 3.5V7C7 7.27614 6.77614 7.5 6.5 7.5C6.22386 7.5 6 7.27614 6 7V4.87891C4.4782 6.06926 3.5 7.91979 3.5 10C3.5 13.5899 6.41015 16.5 10 16.5C13.5899 16.5 16.5 13.5899 16.5 10C16.5 6.5225 13.7691 3.68312 10.335 3.50879L10 3.5L9.89941 3.49023C9.67145 3.44371 9.5 3.24171 9.5 3C9.5 2.72386 9.72386 2.5 10 2.5L10.3857 2.50977Z"/>
+                </svg>
+            </button>
+        </div>`;
 
-    html += '</div>';
     div.innerHTML = html;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -2354,15 +2446,40 @@ function copyToClipboard(id) {
     }
 }
 
+function copyMessageContent(msgId) {
+    const msgEl = document.getElementById(msgId);
+    if (msgEl) {
+        const bodyEl = msgEl.querySelector('.message-body');
+        if (bodyEl) {
+            const text = bodyEl.innerText.trim();
+            navigator.clipboard.writeText(text).then(() => {
+                // Find the copy button and show success state
+                const btn = msgEl.querySelector('.message-action-btn');
+                if (btn) {
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 2000);
+                }
+                showToast('Copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+    }
+}
+
+let lastUserMessage = '';
+function retryLastMessage() {
+    if (lastUserMessage) {
+        document.getElementById('chatInput').value = lastUserMessage;
+        sendMessage();
+    }
+}
+
 function showTyping() {
     const div = document.createElement('div');
-    div.className = 'message';
+    div.className = 'message-assistant';
     div.id = 'typing';
     div.innerHTML = `
-        <div class="message-header">
-            <div class="avatar avatar-assistant">M</div>
-            <span class="message-name">MV Internal</span>
-        </div>
         <div class="message-body">
             <div class="typing"><span></span><span></span><span></span></div>
         </div>`;
@@ -2379,6 +2496,7 @@ async function sendMessage() {
     const msg = chatInput.value.trim();
     if (!msg) return;
 
+    lastUserMessage = msg;  // Save for retry
     addMsg(msg, true);
     history.push({ role: 'user', content: msg });
 
