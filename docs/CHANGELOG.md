@@ -1,6 +1,42 @@
 # Changelog
 
-## 2026-01-04: Fix project New Chat context loss and sidebar layout shift
+## 2026-01-04: Complete fix for project context and sidebar layout shift
+
+### Bug 1: Project context lost (complete fix)
+
+**What Changed**
+When clicking "New chat" from a project page, the welcome screen now shows the project badge with name and color.
+
+**Root Cause**
+Previous fix only set `currentProjectId` but not `currentProject` (full object with name, color). The welcome screen badge requires the full project object.
+
+**Fix**
+- `chat.html:3920-3932` - Fetch full project object via `/api/projects/${PROJECT_ID}`
+- Show welcome project badge with name and color dot
+- Set `currentProject` for subsequent operations
+
+### Bug 2: Sidebar layout shift (complete fix)
+
+**What Changed**
+Sidebar content no longer jumps when scrollbar appears/disappears.
+
+**Root Cause**
+`overflow-y: auto` on `.projects-list` and `.conversations-list` causes scrollbar to appear/disappear, shifting layout.
+
+**Fix**
+- `chat.html:265` - Added `scrollbar-gutter: stable` to `.projects-list`
+- `chat.html:357` - Added `scrollbar-gutter: stable` to `.conversations-list`
+
+### Files Modified
+- `web/templates/chat.html` - Fetch project object, show badge, scrollbar-gutter CSS
+
+### Current State
+- Deployed to production (PID 3365616)
+- Service running
+
+---
+
+## 2026-01-04: Fix project New Chat context loss and sidebar layout shift (superseded)
 
 ### Bug 1: Project "New Chat" loses context
 
