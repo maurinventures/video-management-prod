@@ -3712,7 +3712,7 @@ def api_get_video(video_id):
 
 
 # Admin emails authorized to invite users
-ADMIN_EMAILS = ['joseph@maurinventures.com']
+ADMIN_EMAILS = ['joy@maurinventures.com']
 
 
 @app.route('/admin/invite', methods=['GET', 'POST'])
