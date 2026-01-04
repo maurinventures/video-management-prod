@@ -109,7 +109,7 @@
         height: 18px;
     }
 
-    .sidebar.collapsed + .chat-main .sidebar-toggle-floating {
+    .sidebar.collapsed ~ .main-content .sidebar-toggle-floating {
         display: flex;
     }
 
@@ -616,7 +616,7 @@
     }
 
     /* Main chat area - full width with scrollbar on window edge */
-    .chat-main {
+    .main-content {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -3533,7 +3533,7 @@
 </div>
 
 <!-- Main Chat Area -->
-<div class="chat-main">
+<div class="main-content">
     <!-- Floating sidebar toggle (appears when sidebar is collapsed) -->
     <button class="sidebar-toggle-floating" onclick="toggleSidebar()" title="Open sidebar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3791,7 +3791,7 @@
         </div>
     </div>
 </div>
-</div> <!-- Close chat-main -->
+</div> <!-- Close main-content -->
 
 <!-- Video Preview Modal -->
 <div class="video-modal" id="videoModal" onclick="closeModal(event)">
@@ -4316,6 +4316,7 @@ function toggleRecentsProject(projectId) {
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
