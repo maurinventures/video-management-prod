@@ -1,5 +1,4 @@
-# Secrets - NEVER commit
-config/secrets.yaml
+# Secrets - plain text not committed (encrypted version IS committed)
 config/credentials.yaml
 *.pem
 *.key

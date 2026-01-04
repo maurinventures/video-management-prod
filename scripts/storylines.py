@@ -92,7 +92,7 @@ def get_openai_client() -> OpenAI:
     config = get_config()
     api_key = config.secrets.get("openai", {}).get("api_key")
     if not api_key:
-        raise ValueError("OpenAI API key not found in secrets.yaml")
+        raise ValueError("OpenAI API key not found in credentials.yaml")
     return OpenAI(api_key=api_key)
 
 

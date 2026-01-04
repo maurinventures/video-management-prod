@@ -335,7 +335,7 @@ def get_anthropic_client():
     config = get_config()
     api_key = config.secrets.get("anthropic", {}).get("api_key")
     if not api_key:
-        raise ValueError("Anthropic API key not configured. Add your key to config/secrets.yaml")
+        raise ValueError("Anthropic API key not configured. Add your key to config/credentials.yaml")
     return anthropic.Anthropic(api_key=api_key)
 
 
