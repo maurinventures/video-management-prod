@@ -45,3 +45,4 @@ logs/
 
 # Jupyter
 .ipynb_checkpoints/
+.credentials-reference
