@@ -3405,7 +3405,15 @@
         </a>
         <div class="sidebar-section-items expanded" id="projectsSection">
             <div id="projectsList" class="projects-list">
-                <!-- Projects loaded dynamically -->
+                {% for project in sidebar_projects %}
+                <a href="/project/{{ project.id }}" class="project-item">
+                    <span class="project-dot" style="background: {{ project.color }}"></span>
+                    <span class="project-name">{{ project.name }}</span>
+                    {% if project.conversation_count > 0 %}
+                    <span class="project-count">{{ project.conversation_count }}</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
             </div>
             <button class="create-project-btn" onclick="showCreateProjectModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3466,7 +3474,37 @@
     </div>
 
     <div class="conversations-list" id="conversationsList">
-        <!-- Conversations loaded dynamically -->
+        {% for group in sidebar_conv_groups %}
+        <div class="recents-project-group">
+            <div class="recents-project-header expanded" onclick="toggleRecentsProject('{{ group.project.id }}')">
+                <span class="recents-project-dot" style="background: {{ group.project.color }}"></span>
+                <span class="recents-project-name">{{ group.project.name }}</span>
+                <svg class="recents-project-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="recents-project-items expanded" id="recents-project-{{ group.project.id }}">
+                {% for conv in group.conversations %}
+                <div class="conversation-item nested{% if conv.id == conversation_id %} active{% endif %}"
+                     onclick="loadConversation('{{ conv.id }}')"
+                     data-id="{{ conv.id }}">
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="conversation-title">{{ conv.title }}</div>
+                        <div class="conversation-date">{{ conv.updated_at }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% for conv in sidebar_conv_ungrouped %}
+        <div class="conversation-item{% if conv.id == conversation_id %} active{% endif %}"
+             onclick="loadConversation('{{ conv.id }}')"
+             data-id="{{ conv.id }}">
+            <div style="flex: 1; min-width: 0;">
+                <div class="conversation-title">{{ conv.title }}</div>
+                <div class="conversation-date">{{ conv.updated_at }}</div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 
     <div class="sidebar-footer" style="position: relative;">
@@ -3906,9 +3944,8 @@ let projects = [];
 
 // Initialize based on route
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load data for sidebar (always needed)
-    loadConversations();
-    loadProjects();
+    // Sidebar data is now server-rendered by Jinja - no initial JS load needed
+    // loadProjects() and loadConversations() are kept for refreshing after actions
 
     // Initialize based on current route/view
     if (CURRENT_VIEW === 'recents') {

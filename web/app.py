@@ -1566,6 +1566,79 @@ IMPORTANT:
         }
 
 
+def get_sidebar_data(user_id):
+    """Get projects and conversations for sidebar rendering."""
+    from datetime import datetime, timezone
+
+    def format_date(dt):
+        """Format datetime as relative time."""
+        if not dt:
+            return ''
+        now = datetime.now(timezone.utc) if dt.tzinfo else datetime.now()
+        diff = now - dt
+        seconds = diff.total_seconds()
+        if seconds < 60:
+            return 'Just now'
+        if seconds < 3600:
+            return f'{int(seconds // 60)}m ago'
+        if seconds < 86400:
+            return f'{int(seconds // 3600)}h ago'
+        if seconds < 604800:
+            return f'{int(seconds // 86400)}d ago'
+        return dt.strftime('%b %d')
+
+    with DatabaseSession() as db_session:
+        # Fetch projects
+        projects = db_session.query(Project).filter(
+            Project.user_id == user_id,
+            Project.is_archived == 0
+        ).order_by(Project.created_at.desc()).all()
+
+        sidebar_projects = [{
+            'id': str(p.id),
+            'name': p.name,
+            'color': p.color or '#d97757',
+            'conversation_count': len([c for c in p.conversations if len(c.messages) > 0])
+        } for p in projects]
+
+        # Fetch conversations (non-empty ones for sidebar)
+        conversations = db_session.query(Conversation).filter(
+            Conversation.user_id == user_id
+        ).order_by(Conversation.updated_at.desc()).all()
+
+        # Group conversations by project
+        project_groups = {}
+        ungrouped = []
+
+        for c in conversations:
+            if len(c.messages) == 0:
+                continue  # Skip empty conversations
+
+            conv_data = {
+                'id': str(c.id),
+                'title': c.title,
+                'updated_at': format_date(c.updated_at),
+                'message_count': len(c.messages)
+            }
+
+            if c.project:
+                project_id = str(c.project.id)
+                if project_id not in project_groups:
+                    project_groups[project_id] = {
+                        'project': {
+                            'id': project_id,
+                            'name': c.project.name,
+                            'color': c.project.color or '#d97757'
+                        },
+                        'conversations': []
+                    }
+                project_groups[project_id]['conversations'].append(conv_data)
+            else:
+                ungrouped.append(conv_data)
+
+        return sidebar_projects, list(project_groups.values()), ungrouped
+
+
 @app.route('/chat')
 def chat():
     """New chat - shows welcome screen for starting a new conversation."""
@@ -1573,7 +1646,12 @@ def chat():
         return redirect(url_for('login'))
     # Support ?project=<id> to create new chat in a specific project
     project_id = request.args.get('project')
-    return render_template('chat.html', view='new', project_id=project_id)
+    user_id = UUID(session['user_id'])
+    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
+    return render_template('chat.html', view='new', project_id=project_id,
+                         sidebar_projects=sidebar_projects,
+                         sidebar_conv_groups=conv_groups,
+                         sidebar_conv_ungrouped=conv_ungrouped)
 
 
 @app.route('/chat/recents')
@@ -1581,7 +1659,12 @@ def chat_recents():
     """Chat list - shows all recent conversations."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('chat.html', view='recents')
+    user_id = UUID(session['user_id'])
+    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
+    return render_template('chat.html', view='recents',
+                         sidebar_projects=sidebar_projects,
+                         sidebar_conv_groups=conv_groups,
+                         sidebar_conv_ungrouped=conv_ungrouped)
 
 
 @app.route('/chat/projects')
@@ -1589,7 +1672,12 @@ def chat_projects():
     """Projects list - shows all projects."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('chat.html', view='projects')
+    user_id = UUID(session['user_id'])
+    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
+    return render_template('chat.html', view='projects',
+                         sidebar_projects=sidebar_projects,
+                         sidebar_conv_groups=conv_groups,
+                         sidebar_conv_ungrouped=conv_ungrouped)
 
 
 @app.route('/chat/<conversation_id>')
@@ -1597,7 +1685,12 @@ def chat_conversation(conversation_id):
     """Specific conversation view."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('chat.html', view='conversation', conversation_id=conversation_id)
+    user_id = UUID(session['user_id'])
+    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
+    return render_template('chat.html', view='conversation', conversation_id=conversation_id,
+                         sidebar_projects=sidebar_projects,
+                         sidebar_conv_groups=conv_groups,
+                         sidebar_conv_ungrouped=conv_ungrouped)
 
 
 @app.route('/new')
