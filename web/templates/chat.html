@@ -705,18 +705,12 @@
         font-size: 0.9375rem;
     }
 
-    /* Message actions - Claude style */
+    /* Message actions */
     .message-actions {
         display: flex;
         align-items: center;
         gap: 0.25rem;
         margin-top: 0.75rem;
-        opacity: 0;
-        transition: opacity 0.15s;
-    }
-
-    .message-assistant:hover .message-actions {
-        opacity: 1;
     }
 
     .message-action-btn {
@@ -3176,9 +3170,9 @@ function format(text) {
         </div>`;
     });
 
-    // Bold and italic
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Bold and italic (use [\s\S] to match across newlines)
+    text = text.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
 
     // Clean up extra whitespace
     text = text.replace(/\n{3,}/g, '\n\n');
