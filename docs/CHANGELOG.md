@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-01-04: Fix project New Chat context loss and sidebar layout shift
+
+### Bug 1: Project "New Chat" loses context
+
+**What Changed**
+When inside a project, clicking "New chat" now correctly creates a conversation in that project.
+
+**Root Cause**
+- `project.html:849` - Sidebar link was `<a href="/chat">` - lost project context
+- `project.html:1234` - `startNewChat()` passed `?project=${projectId}` but `/chat` route ignored it
+- `app.py:1570-1574` - `/chat` route didn't read the `project` query parameter
+- `chat.html:4657` - `sendWelcomeMessage()` didn't include project_id when creating conversation
+
+**Fix**
+- `app.py:1574-1576` - Read `project` param and pass to template
+- `chat.html:3848` - Define `PROJECT_ID` constant from template
+- `chat.html:3914-3916` - Initialize `currentProjectId` from `PROJECT_ID` on new chat view
+- `chat.html:4654-4657` - Include `project_id` in conversation creation
+- `project.html:849` - Changed link to `/chat?project={{ project_id }}`
+
+### Bug 2: Sidebar layout shift
+
+**What Changed**
+Sidebar content no longer jumps when clicking items or loading dynamic content.
+
+**Root Cause**
+- `chat.html:181` - `.sidebar-nav-item` had `transition: all 0.15s` which animates layout properties
+- `chat.html:261-264` - `.projects-list` had no min-height, collapsed when empty
+- `chat.html:352-356` - `.conversations-list` had no min-height, resized on dynamic content
+
+**Fix**
+- `chat.html:181` - Changed to `transition: background 0.15s, color 0.15s`
+- `chat.html:263` - Added `min-height: 32px` to `.projects-list`
+- `chat.html:354` - Added `min-height: 100px` to `.conversations-list`
+
+### Files Modified
+- `web/app.py` - Read project query param in /chat route
+- `web/templates/chat.html` - CSS fixes, PROJECT_ID constant, sendWelcomeMessage fix
+- `web/templates/project.html` - Sidebar New Chat link with project ID
+
+### Current State
+- Deployed to production
+- Service running (PID 3364187)
+
+---
+
 ## 2026-01-04: Implement route-based view architecture
 
 ### What Changed
