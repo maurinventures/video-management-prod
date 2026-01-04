@@ -4429,8 +4429,8 @@ function clearChat() {
 function showChatInterface() {
     // Hide welcome screen, show messages and input
     document.getElementById('welcomeScreen').style.display = 'none';
-    chatMessages.style.display = 'flex';
-    document.querySelector('.input-area').style.display = 'block';
+    chatMessages.style.display = '';  // Use CSS default (block)
+    document.querySelector('.input-area').style.display = '';
 }
 
 // Welcome screen functions
