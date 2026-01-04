@@ -3821,6 +3821,7 @@
     </div>
 </div>
 
+<script src="/static/js/shared.js"></script>
 <script>
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
@@ -4315,24 +4316,7 @@ function toggleRecentsProject(projectId) {
     localStorage.setItem(`recents_project_${projectId}`, isExpanded);
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now - date;
-
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-    return date.toLocaleDateString();
-}
+// escapeHtml() and formatDate() - now in shared.js
 
 async function createNewConversation(projectId = null) {
     // Check for existing empty chat (no messages) to reuse
@@ -6241,30 +6225,7 @@ async function regenerateClip(clipIndex, feedback = '') {
 // ============================================================================
 // SIDEBAR & USER MENU FUNCTIONS
 // ============================================================================
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('collapsed');
-    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-}
-
-function toggleProjectsSection() {
-    const headers = document.querySelectorAll('.sidebar-section-header');
-    const header = headers[0]; // First header is Projects
-    const section = document.getElementById('projectsSection');
-    header.classList.toggle('expanded');
-    section.classList.toggle('expanded');
-    localStorage.setItem('projectsExpanded', section.classList.contains('expanded'));
-}
-
-function toggleLibrarySection() {
-    const headers = document.querySelectorAll('.sidebar-section-header');
-    const header = headers[1]; // Second header is Library
-    const section = document.getElementById('librarySection');
-    header.classList.toggle('expanded');
-    section.classList.toggle('expanded');
-    localStorage.setItem('libraryExpanded', section.classList.contains('expanded'));
-}
+// toggleSidebar(), toggleProjectsSection(), toggleLibrarySection() - now in shared.js
 
 // Projects functionality
 let selectedProjectColor = '#d97757';
@@ -6380,29 +6341,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Restore sidebar state on load
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    if (sidebarCollapsed) {
-        document.getElementById('sidebar').classList.add('collapsed');
-    }
-
-    // Restore projects section state
-    const projectsExpanded = localStorage.getItem('projectsExpanded');
-    if (projectsExpanded === 'false') {
-        const headers = document.querySelectorAll('.sidebar-section-header');
-        headers[0].classList.remove('expanded');
-        document.getElementById('projectsSection').classList.remove('expanded');
-    }
-
-    // Restore library section state
-    const libraryExpanded = localStorage.getItem('libraryExpanded');
-    if (libraryExpanded === 'false') {
-        const headers = document.querySelectorAll('.sidebar-section-header');
-        headers[1].classList.remove('expanded');
-        document.getElementById('librarySection').classList.remove('expanded');
-    }
-});
+// Sidebar state restoration - now handled by shared.js
 
 // Toast notification system
 function showToast(message, type = 'info', duration = 3000) {
