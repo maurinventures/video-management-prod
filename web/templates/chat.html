@@ -3345,7 +3345,7 @@
         </button>
     </div>
 
-    <a href="/new" class="new-chat-btn" id="newChatBtn">
+    <a href="/chat" class="new-chat-btn{% if view == 'new' %} active{% endif %}" id="newChatBtn">
         <div class="new-chat-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         </div>
@@ -3353,23 +3353,23 @@
     </a>
 
     <nav class="sidebar-nav">
-        <div class="sidebar-nav-item active" id="chatsNavItem" onclick="showChatsListView()">
+        <a href="/chat/recents" class="sidebar-nav-item{% if view == 'recents' %} active{% endif %}" id="chatsNavItem">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             Chats
-        </div>
-        <div class="sidebar-section-header expanded" id="projectsHeader" onclick="showProjectsListView()">
+        </a>
+        <a href="/chat/projects" class="sidebar-section-header expanded{% if view == 'projects' %} active{% endif %}" id="projectsHeader">
             <div class="sidebar-section-header-left">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                 </svg>
                 Projects
             </div>
-            <svg class="sidebar-section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="event.stopPropagation(); toggleProjectsSection()">
+            <svg class="sidebar-section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="event.preventDefault(); event.stopPropagation(); toggleProjectsSection()">
                 <path d="M6 9l6 6 6-6"/>
             </svg>
-        </div>
+        </a>
         <div class="sidebar-section-items expanded" id="projectsSection">
             <div id="projectsList" class="projects-list">
                 <!-- Projects loaded dynamically -->
@@ -3381,7 +3381,7 @@
                 Create project
             </button>
         </div>
-        <div class="sidebar-section-header expanded" id="libraryHeader" onclick="showLibraryListView()">
+        <div class="sidebar-section-header expanded" id="libraryHeader" onclick="toggleLibrarySection()">
             <div class="sidebar-section-header-left">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -3389,7 +3389,7 @@
                 </svg>
                 Library
             </div>
-            <svg class="sidebar-section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="event.stopPropagation(); toggleLibrarySection()">
+            <svg class="sidebar-section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M6 9l6 6 6-6"/>
             </svg>
         </div>
@@ -3585,8 +3585,9 @@
         </div>
     </div>
 
-    <!-- Chats List View -->
-    <div class="chats-list-view" id="chatsListView">
+    <!-- Chats List View - shown only on /chat/recents route -->
+    {% if view == 'recents' %}
+    <div class="chats-list-view active" id="chatsListView">
         <div class="chats-list-header">
             <h1 class="chats-list-title">Chats</h1>
             <button class="chats-new-btn" onclick="createNewConversationFromList()">
@@ -3610,9 +3611,11 @@
             <!-- Chat items loaded dynamically -->
         </div>
     </div>
+    {% endif %}
 
-    <!-- Projects List View -->
-    <div class="projects-list-view" id="projectsListView">
+    <!-- Projects List View - shown only on /chat/projects route -->
+    {% if view == 'projects' %}
+    <div class="projects-list-view active" id="projectsListView">
         <div class="projects-list-header">
             <h1 class="projects-list-title">Projects</h1>
             <button class="projects-new-btn" onclick="showCreateProjectModal()">
@@ -3636,9 +3639,11 @@
             <!-- Project items loaded dynamically -->
         </div>
     </div>
+    {% endif %}
 
-    <!-- Library List View -->
-    <div class="library-list-view" id="libraryListView">
+    <!-- Library List View - not used in route-based navigation -->
+    {% if view == 'library' %}
+    <div class="library-list-view active" id="libraryListView">
         <div class="library-list-header">
             <h1 class="library-list-title">Library</h1>
         </div>
@@ -3701,11 +3706,16 @@
             </a>
         </div>
     </div>
+    {% endif %}
 
+    <!-- Chat messages - shown for conversation view -->
+    {% if view == 'conversation' %}
     <div class="chat-messages" id="chatMessages"></div>
+    {% endif %}
 
-    <!-- Welcome screen for new chats -->
-    <div class="welcome-screen" id="welcomeScreen" style="display: none;">
+    <!-- Welcome screen for new chats - shown for new chat view -->
+    {% if view == 'new' %}
+    <div class="welcome-screen" id="welcomeScreen" style="display: flex;">
         <div class="welcome-greeting">
             <div class="welcome-greeting-main">
                 <svg class="welcome-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -3768,7 +3778,10 @@
             </button>
         </div>
     </div>
+    {% endif %}
 
+    <!-- Input area - shown for conversation view -->
+    {% if view == 'conversation' %}
 <div class="input-area">
     <div class="input-wrap">
         <div class="model-selector">
@@ -3796,6 +3809,7 @@
         </div>
     </div>
 </div>
+    {% endif %}
 </div> <!-- Close main-content -->
 
 <!-- Video Preview Modal -->
@@ -3828,6 +3842,10 @@
 
 <script src="/static/js/shared.js"></script>
 <script>
+// Route-based view (set by server)
+const CURRENT_VIEW = '{{ view }}';
+const CONVERSATION_ID = '{{ conversation_id or "" }}';
+
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -3840,92 +3858,122 @@ let currentAudioPlayer = null;
 let lastQuery = '';
 let lastScript = '';
 let lastModel = '';
-let currentConversationId = null;
+let currentConversationId = CONVERSATION_ID || null;
 let currentProjectId = null;
 let currentProject = null;  // Full project info {id, name, color}
 let conversations = [];
 
-// View state
-let isChatsListViewActive = false;
-let isProjectsListViewActive = false;
-let isLibraryListViewActive = false;
+// Select mode state (for list views)
 let isSelectMode = false;
 let isProjectsSelectMode = false;
 let selectedChats = new Set();
 let selectedProjects = new Set();
 let projects = [];
 
-// Load conversations and projects on page load
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize based on route
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load data for sidebar (always needed)
     loadConversations();
     loadProjects();
-    loadLibraryCounts();
 
-    // Handle different routes and view parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const view = urlParams.get('view');
-    const conversationId = urlParams.get('conversation');
-    const isNewChatPage = window.location.pathname === '/new';
+    // Initialize based on current route/view
+    if (CURRENT_VIEW === 'recents') {
+        // Chats list view - render list
+        renderChatsList();
+    } else if (CURRENT_VIEW === 'projects') {
+        // Projects list view - render list
+        renderProjectsList();
+    } else if (CURRENT_VIEW === 'conversation' && CONVERSATION_ID) {
+        // Conversation view - load the specific conversation
+        await loadConversationData(CONVERSATION_ID);
 
-    if (isNewChatPage) {
-        // /new route - show welcome screen for new chat
-        showNewChatView();
-    } else if (conversationId) {
-        // Loading a specific conversation - don't show list view
-        // The conversation will be loaded by loadConversations callback
-    } else if (view === 'projects') {
-        showProjectsListView();
-    } else if (view === 'library') {
-        showLibraryListView();
-    } else {
-        // Default: show chats list view
-        showChatsListView();
+        // Check for pending message from welcome screen
+        const pendingMessage = sessionStorage.getItem('pendingMessage');
+        const pendingModel = sessionStorage.getItem('pendingModel');
+        if (pendingMessage) {
+            sessionStorage.removeItem('pendingMessage');
+            sessionStorage.removeItem('pendingModel');
+
+            // Set the model if available
+            const modelSelect = document.getElementById('modelSelect');
+            if (modelSelect && pendingModel) {
+                modelSelect.value = pendingModel;
+            }
+
+            // Put message in input and send
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.value = pendingMessage;
+                await sendMessage();
+            }
+        }
+    } else if (CURRENT_VIEW === 'new') {
+        // New chat view - just update the greeting
+        updateWelcomeGreeting();
     }
+
+    // Load library counts for sidebar
+    loadLibraryCounts();
 });
 
-// Hide all list views and chat
-function hideAllViews() {
-    document.getElementById('chatsListView').classList.remove('active');
-    document.getElementById('projectsListView').classList.remove('active');
-    document.getElementById('libraryListView').classList.remove('active');
-    document.getElementById('chatMessages').style.display = 'none';
-    document.getElementById('welcomeScreen').style.display = 'none';
-    document.querySelector('.input-area').style.display = 'none';
-    document.querySelector('.chat-header').style.display = 'none';
-    document.getElementById('chatsNavItem').classList.remove('active');
-    document.getElementById('newChatBtn').classList.remove('active');
-    isChatsListViewActive = false;
-    isProjectsListViewActive = false;
-    isLibraryListViewActive = false;
+// Update welcome greeting based on time of day
+function updateWelcomeGreeting() {
+    const welcomeText = document.getElementById('welcomeText');
+    if (!welcomeText) return;
+
+    const hour = new Date().getHours();
+    let greeting = 'Good morning';
+    if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+    else if (hour >= 17) greeting = 'Good evening';
+    welcomeText.textContent = `${greeting}, Joseph`;
 }
 
-// New Chat View - shows welcome screen for /new route
-function showNewChatView() {
-    hideAllViews();
-    document.getElementById('welcomeScreen').style.display = 'flex';
-    document.getElementById('newChatBtn').classList.add('active');
-    // Reset conversation state for new chat
-    currentConversationId = null;
-    currentProjectId = null;
-    currentProject = null;
-    history = [];
-    clips = [];
+// Load conversation data for conversation view
+async function loadConversationData(conversationId) {
+    try {
+        const res = await fetch(`/api/conversations/${conversationId}`);
+        const data = await res.json();
+
+        currentConversationId = conversationId;
+        currentProjectId = data.project_id || null;
+        currentProject = data.project || null;
+        history = [];
+        clips = [];
+
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) chatMessages.innerHTML = '';
+
+        // Load messages
+        if (data.messages && data.messages.length > 0) {
+            for (const msg of data.messages) {
+                if (msg.role === 'user') {
+                    addMsg(msg.content, true);
+                    history.push({ role: 'user', content: msg.content });
+                } else {
+                    addMsg(msg.content, false, msg.clips || [], 0);
+                    history.push({ role: 'assistant', content: msg.content });
+                    if (msg.clips && msg.clips.length > 0) {
+                        clips = msg.clips;
+                    }
+                }
+            }
+        }
+
+        // Update header project badge if present
+        const headerProject = document.getElementById('chatHeaderProject');
+        if (headerProject && currentProject) {
+            document.getElementById('chatHeaderProjectDot').style.background = currentProject.color || '#d97757';
+            document.getElementById('chatHeaderProjectName').textContent = currentProject.name;
+            headerProject.classList.add('visible');
+        }
+    } catch (e) {
+        console.error('Failed to load conversation:', e);
+    }
 }
 
-// Chats List View Functions
-function showChatsListView() {
-    hideAllViews();
-    isChatsListViewActive = true;
-    document.getElementById('chatsListView').classList.add('active');
-    document.getElementById('chatsNavItem').classList.add('active');
-    renderChatsList();
-}
-
-// Library List View Functions
-function showLibraryListView() {
-    hideAllViews();
-    isLibraryListViewActive = true;
-    document.getElementById('libraryListView').classList.add('active');
+// Navigate to a conversation (for use in onclick handlers)
+function navigateToConversation(conversationId) {
+    window.location.href = `/chat/${conversationId}`;
 }
 
 async function loadLibraryCounts() {
@@ -3978,24 +4026,29 @@ async function loadLibraryCounts() {
     }
 }
 
-// Projects List View Functions
+// Projects List View Functions (route-based - navigate instead of toggle)
 function showProjectsListView() {
-    hideAllViews();
-    isProjectsListViewActive = true;
-    document.getElementById('projectsListView').classList.add('active');
-    renderProjectsList();
+    window.location.href = '/chat/projects';
 }
 
 function renderProjectsList() {
     const container = document.getElementById('projectsListContainer');
-    const searchTerm = document.getElementById('projectsSearch').value.toLowerCase();
+    const searchInput = document.getElementById('projectsSearch');
+    const projectsCount = document.getElementById('projectsCount');
+
+    // Only render if elements exist (projects view)
+    if (!container) return;
+
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
     const filteredProjects = projects.filter(proj =>
         proj.name.toLowerCase().includes(searchTerm) ||
         (proj.description && proj.description.toLowerCase().includes(searchTerm))
     );
 
-    document.getElementById('projectsCount').textContent = `${filteredProjects.length} project${filteredProjects.length !== 1 ? 's' : ''} with MV Internal`;
+    if (projectsCount) {
+        projectsCount.textContent = `${filteredProjects.length} project${filteredProjects.length !== 1 ? 's' : ''} with MV Internal`;
+    }
 
     container.innerHTML = filteredProjects.map(proj => `
         <div class="project-list-item" data-id="${proj.id}" onclick="openProjectFromList('${proj.id}')">
@@ -4093,38 +4146,33 @@ async function deleteProjectFromList(projectId) {
     }
 }
 
+// showChatView - now route-based, navigates to appropriate chat route
 function showChatView() {
-    hideAllViews();
-    document.querySelector('.chat-header').style.display = '';
-
-    // Show welcome screen for empty chats, chat interface for chats with messages
-    const currentConv = conversations.find(c => c.id === currentConversationId);
-    if (currentConv && currentConv.message_count > 0) {
-        showChatInterface();
+    if (currentConversationId) {
+        window.location.href = `/chat/${currentConversationId}`;
     } else {
-        // For new/empty chats, show welcome screen and highlight New chat button
-        document.getElementById('welcomeScreen').style.display = 'flex';
-        document.getElementById('chatMessages').style.display = 'none';
-        document.querySelector('.input-area').style.display = 'none';
-        document.getElementById('newChatBtn').classList.add('active');
-    }
-
-    // Exit select mode if active
-    if (isSelectMode) {
-        toggleSelectMode();
+        window.location.href = '/chat';
     }
 }
 
 function renderChatsList() {
     const chatsList = document.getElementById('chatsList');
-    const searchTerm = document.getElementById('chatsSearch').value.toLowerCase();
+    const chatsSearch = document.getElementById('chatsSearch');
+    const chatsCount = document.getElementById('chatsCount');
+
+    // Only render if elements exist (recents view)
+    if (!chatsList) return;
+
+    const searchTerm = chatsSearch ? chatsSearch.value.toLowerCase() : '';
 
     // Filter out empty chats (message_count === 0) and apply search
     const filteredChats = conversations.filter(conv =>
         conv.message_count > 0 && conv.title.toLowerCase().includes(searchTerm)
     );
 
-    document.getElementById('chatsCount').textContent = `${filteredChats.length} chat${filteredChats.length !== 1 ? 's' : ''} with MV Internal`;
+    if (chatsCount) {
+        chatsCount.textContent = `${filteredChats.length} chat${filteredChats.length !== 1 ? 's' : ''} with MV Internal`;
+    }
 
     chatsList.innerHTML = filteredChats.map(conv => `
         <div class="chat-list-item" data-id="${conv.id}" onclick="openChatFromList('${conv.id}')">
@@ -4177,13 +4225,13 @@ function openChatFromList(conversationId) {
         toggleChatSelection(conversationId);
         return;
     }
-    showChatView();
-    loadConversation(conversationId);
+    // Navigate to conversation
+    window.location.href = `/chat/${conversationId}`;
 }
 
-async function createNewConversationFromList() {
-    showChatView();
-    await createNewConversation();
+function createNewConversationFromList() {
+    // Navigate to new chat
+    window.location.href = '/chat';
 }
 
 function toggleSelectMode() {
@@ -4252,20 +4300,9 @@ async function loadConversations() {
         conversations = data.conversations || [];
         renderConversations();
 
-        // Check for URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const projectParam = urlParams.get('project');
-        const conversationParam = urlParams.get('conversation');
-
-        if (conversationParam) {
-            // Load specific conversation
-            await loadConversation(conversationParam);
-        } else if (projectParam) {
-            // Create new conversation in project
-            await createNewConversation(projectParam);
-        } else if (!isChatsListViewActive && !isProjectsListViewActive && !isLibraryListViewActive) {
-            // Default: show welcome screen with new chat (only if not showing a list view)
-            await createNewConversation();
+        // If on recents view, re-render the list now that we have data
+        if (CURRENT_VIEW === 'recents') {
+            renderChatsList();
         }
     } catch (e) {
         console.error('Failed to load conversations:', e);
@@ -4345,10 +4382,8 @@ function renderConversationItem(conv) {
 // escapeHtml() and formatDate() - now in shared.js
 
 async function createNewConversation(projectId = null) {
-    // Switch to chat view if we're in any list view
-    if (isChatsListViewActive || isProjectsListViewActive || isLibraryListViewActive) {
-        showChatView();
-    }
+    // In route-based navigation, just create the conversation
+    // View switching is handled by navigation
 
     // Check for existing empty chat (no messages) to reuse
     // If creating a project chat, look for empty chat in that specific project
@@ -4417,11 +4452,13 @@ async function createNewConversation(projectId = null) {
 }
 
 async function loadConversation(conversationId) {
-    // Switch to chat view if in any list view
-    if (isChatsListViewActive || isProjectsListViewActive || isLibraryListViewActive) {
-        showChatView();
-    }
+    // In route-based navigation, navigate to the conversation route
+    // This is used by sidebar clicks and other navigation
+    window.location.href = `/chat/${conversationId}`;
+}
 
+// Internal function to load conversation data without navigation
+async function _loadConversationInternal(conversationId) {
     try {
         const res = await fetch(`/api/conversations/${conversationId}`);
         const data = await res.json();
@@ -4605,48 +4642,27 @@ async function sendWelcomeMessage() {
     const msg = welcomeInput.value.trim();
     if (!msg) return;
 
-    // Sync model selection to main model select
-    const welcomeModel = document.getElementById('welcomeModelSelect').value;
-    document.getElementById('modelSelect').value = welcomeModel;
+    // Store message and model selection before navigating
+    const welcomeModel = document.getElementById('welcomeModelSelect')?.value || 'claude-sonnet';
 
-    // If on /new page or no conversation exists, create one first
-    if (!currentConversationId) {
-        try {
-            const res = await fetch('/api/conversations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: 'New Chat' })
-            });
-            const data = await res.json();
-            currentConversationId = data.id;
+    // Create a new conversation
+    try {
+        const res = await fetch('/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: 'New Chat' })
+        });
+        const data = await res.json();
 
-            // Add to conversations list
-            conversations.unshift({
-                id: data.id,
-                title: data.title,
-                updated_at: data.created_at,
-                message_count: 0,
-                project_id: null,
-                project: null
-            });
+        // Store the pending message in sessionStorage so it can be sent after navigation
+        sessionStorage.setItem('pendingMessage', msg);
+        sessionStorage.setItem('pendingModel', welcomeModel);
 
-            // Update URL without page reload
-            window.history.replaceState({}, '', `/chat?conversation=${data.id}`);
-        } catch (e) {
-            console.error('Failed to create conversation:', e);
-            return;
-        }
+        // Navigate to the conversation
+        window.location.href = `/chat/${data.id}`;
+    } catch (e) {
+        console.error('Failed to create conversation:', e);
     }
-
-    // Switch to chat interface
-    showChatInterface();
-
-    // Put message in main input and send
-    chatInput.value = msg;
-    welcomeInput.value = '';
-
-    // Send the message
-    await sendMessage();
 }
 
 function format(text) {
@@ -6296,6 +6312,11 @@ async function loadProjects() {
         if (res.ok) {
             projects = await res.json();
             renderProjects();
+
+            // If on projects view, re-render the list now that we have data
+            if (CURRENT_VIEW === 'projects') {
+                renderProjectsList();
+            }
         }
     } catch (e) {
         console.error('Failed to load projects:', e);

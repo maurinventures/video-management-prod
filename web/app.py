@@ -1568,19 +1568,40 @@ IMPORTANT:
 
 @app.route('/chat')
 def chat():
-    """Chat interface for script generation."""
-    # Check if user is logged in
+    """New chat - shows welcome screen for starting a new conversation."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('chat.html')
+    return render_template('chat.html', view='new')
+
+
+@app.route('/chat/recents')
+def chat_recents():
+    """Chat list - shows all recent conversations."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('chat.html', view='recents')
+
+
+@app.route('/chat/projects')
+def chat_projects():
+    """Projects list - shows all projects."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('chat.html', view='projects')
+
+
+@app.route('/chat/<conversation_id>')
+def chat_conversation(conversation_id):
+    """Specific conversation view."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('chat.html', view='conversation', conversation_id=conversation_id)
 
 
 @app.route('/new')
 def new_chat():
-    """New chat page - shows welcome screen for starting a new conversation."""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return render_template('chat.html', is_new_chat=True)
+    """Legacy /new route - redirect to /chat."""
+    return redirect(url_for('chat'))
 
 
 @app.route('/project/<project_id>')
