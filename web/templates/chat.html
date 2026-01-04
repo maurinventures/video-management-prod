@@ -970,71 +970,131 @@
         color: #666;
     }
 
-    .projects-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 1rem;
-    }
-
-    .project-card {
-        background: white;
-        border: 1px solid #e5e4df;
-        border-radius: 12px;
-        padding: 1.25rem;
+    .projects-select-btn {
+        color: #d97757;
+        background: none;
+        border: none;
+        font-size: 0.875rem;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.15s;
+        font-family: inherit;
     }
 
-    .project-card:hover {
-        border-color: #d97757;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    .projects-select-btn:hover {
+        text-decoration: underline;
     }
 
-    .project-card-header {
+    .projects-list-container {
+        border-top: 1px solid #e5e4df;
+    }
+
+    .project-list-item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid #e5e4df;
+        cursor: pointer;
+        transition: background 0.15s;
     }
 
-    .project-card-icon {
-        width: 36px;
-        height: 36px;
+    .project-list-item:hover {
+        background: #f9f9f7;
+        margin: 0 -1rem;
+        padding: 1rem;
+    }
+
+    .project-list-checkbox {
+        width: 18px;
+        height: 18px;
+        margin-right: 1rem;
+        accent-color: #d97757;
+        display: none;
+    }
+
+    .projects-list-view.select-mode .project-list-checkbox {
+        display: block;
+    }
+
+    .project-list-icon {
+        width: 32px;
+        height: 32px;
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
     }
 
-    .project-card-icon svg {
-        width: 20px;
-        height: 20px;
+    .project-list-icon svg {
+        width: 16px;
+        height: 16px;
         color: white;
     }
 
-    .project-card-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #1a1a1a;
+    .project-list-content {
         flex: 1;
+        min-width: 0;
+    }
+
+    .project-list-title {
+        font-size: 0.9375rem;
+        font-weight: 500;
+        color: #1a1a1a;
+        margin-bottom: 0.25rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    .project-card-desc {
+    .project-list-meta {
         font-size: 0.8125rem;
-        color: #666;
-        margin-bottom: 0.75rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        color: #888;
     }
 
-    .project-card-meta {
-        font-size: 0.75rem;
+    .project-list-actions {
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    .project-list-item:hover .project-list-actions {
+        opacity: 1;
+    }
+
+    .project-list-action-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
         color: #888;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .project-list-action-btn:hover {
+        background: #e5e4df;
+        color: #1a1a1a;
+    }
+
+    .projects-select-actions {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        background: #f5f4ef;
+        border-radius: 8px;
+    }
+
+    .projects-list-view.select-mode .projects-select-actions {
+        display: flex;
+    }
+
+    .projects-list-view.select-mode .projects-count-row {
+        display: none;
     }
 
     .message {
@@ -3163,10 +3223,16 @@
             <input type="text" class="projects-search" id="projectsSearch" placeholder="Search your projects..." oninput="filterProjectsList()">
         </div>
         <div class="projects-count-row">
-            <span id="projectsCount">0 projects</span>
+            <span id="projectsCount">0 projects with MV Internal</span>
+            <button class="projects-select-btn" onclick="toggleProjectsSelectMode()">Select</button>
         </div>
-        <div class="projects-grid" id="projectsGrid">
-            <!-- Project cards loaded dynamically -->
+        <div class="projects-select-actions">
+            <span class="select-count" id="projectsSelectCount">0 selected</span>
+            <button class="select-action-btn" onclick="toggleProjectsSelectMode()">Cancel</button>
+            <button class="select-action-btn danger" onclick="deleteSelectedProjects()">Delete</button>
+        </div>
+        <div class="projects-list-container" id="projectsListContainer">
+            <!-- Project items loaded dynamically -->
         </div>
     </div>
 
@@ -3262,7 +3328,9 @@ let conversations = [];
 let isChatsListViewActive = false;
 let isProjectsListViewActive = false;
 let isSelectMode = false;
+let isProjectsSelectMode = false;
 let selectedChats = new Set();
+let selectedProjects = new Set();
 let projects = [];
 
 // Load conversations and projects on page load
@@ -3301,7 +3369,7 @@ function showProjectsListView() {
 }
 
 function renderProjectsList() {
-    const grid = document.getElementById('projectsGrid');
+    const container = document.getElementById('projectsListContainer');
     const searchTerm = document.getElementById('projectsSearch').value.toLowerCase();
 
     const filteredProjects = projects.filter(proj =>
@@ -3309,20 +3377,29 @@ function renderProjectsList() {
         (proj.description && proj.description.toLowerCase().includes(searchTerm))
     );
 
-    document.getElementById('projectsCount').textContent = `${filteredProjects.length} project${filteredProjects.length !== 1 ? 's' : ''}`;
+    document.getElementById('projectsCount').textContent = `${filteredProjects.length} project${filteredProjects.length !== 1 ? 's' : ''} with MV Internal`;
 
-    grid.innerHTML = filteredProjects.map(proj => `
-        <div class="project-card" onclick="openProjectFromList('${proj.id}')">
-            <div class="project-card-header">
-                <div class="project-card-icon" style="background: ${proj.color || '#d97757'}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                    </svg>
-                </div>
-                <div class="project-card-title">${escapeHtml(proj.name)}</div>
+    container.innerHTML = filteredProjects.map(proj => `
+        <div class="project-list-item" data-id="${proj.id}" onclick="openProjectFromList('${proj.id}')">
+            <input type="checkbox" class="project-list-checkbox"
+                   ${selectedProjects.has(proj.id) ? 'checked' : ''}
+                   onclick="event.stopPropagation(); toggleProjectSelection('${proj.id}')">
+            <div class="project-list-icon" style="background: ${proj.color || '#d97757'}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
             </div>
-            ${proj.description ? `<div class="project-card-desc">${escapeHtml(proj.description)}</div>` : ''}
-            <div class="project-card-meta">Updated ${timeAgo(proj.updated_at)}</div>
+            <div class="project-list-content">
+                <div class="project-list-title">${escapeHtml(proj.name)}</div>
+                <div class="project-list-meta">Last updated ${timeAgo(proj.updated_at)}</div>
+            </div>
+            <div class="project-list-actions">
+                <button class="project-list-action-btn" onclick="event.stopPropagation(); deleteProjectFromList('${proj.id}')" title="More">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     `).join('');
 }
@@ -3332,7 +3409,70 @@ function filterProjectsList() {
 }
 
 function openProjectFromList(projectId) {
+    if (isProjectsSelectMode) {
+        toggleProjectSelection(projectId);
+        return;
+    }
     window.location.href = `/project/${projectId}`;
+}
+
+function toggleProjectsSelectMode() {
+    isProjectsSelectMode = !isProjectsSelectMode;
+    const listView = document.getElementById('projectsListView');
+    if (isProjectsSelectMode) {
+        listView.classList.add('select-mode');
+        selectedProjects.clear();
+    } else {
+        listView.classList.remove('select-mode');
+        selectedProjects.clear();
+    }
+    renderProjectsList();
+    updateProjectsSelectCount();
+}
+
+function toggleProjectSelection(projectId) {
+    if (selectedProjects.has(projectId)) {
+        selectedProjects.delete(projectId);
+    } else {
+        selectedProjects.add(projectId);
+    }
+    renderProjectsList();
+    updateProjectsSelectCount();
+}
+
+function updateProjectsSelectCount() {
+    document.getElementById('projectsSelectCount').textContent = `${selectedProjects.size} selected`;
+}
+
+async function deleteSelectedProjects() {
+    if (selectedProjects.size === 0) return;
+    if (!confirm(`Delete ${selectedProjects.size} project${selectedProjects.size !== 1 ? 's' : ''}?`)) return;
+
+    for (const id of selectedProjects) {
+        try {
+            await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+        } catch (e) {
+            console.error('Failed to delete project:', e);
+        }
+    }
+
+    // Refresh
+    await loadProjects();
+    toggleProjectsSelectMode();
+    renderProjectsList();
+}
+
+async function deleteProjectFromList(projectId) {
+    if (!confirm('Delete this project?')) return;
+
+    try {
+        await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
+        projects = projects.filter(p => p.id !== projectId);
+        renderProjects();
+        renderProjectsList();
+    } catch (e) {
+        console.error('Failed to delete project:', e);
+    }
 }
 
 function showChatView() {
