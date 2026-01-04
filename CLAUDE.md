@@ -1,5 +1,9 @@
 # Claude Code Rules for MV Internal
 
+## Model
+
+**Use Claude Opus 4.5** (`claude-opus-4-5-20251101`) for all tasks on this project.
+
 ## Deployment
 
 **Always deploy to production**: https://maurinventuresinternal.com
