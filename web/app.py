@@ -1875,7 +1875,7 @@ def api_list_projects():
             'custom_instructions': p.custom_instructions,
             'color': p.color,
             'is_archived': p.is_archived,
-            'conversation_count': len(p.conversations),
+            'conversation_count': len([c for c in p.conversations if len(c.messages) > 0]),
             'created_at': p.created_at.isoformat() if p.created_at else None,
             'updated_at': p.updated_at.isoformat() if p.updated_at else None
         } for p in projects])
