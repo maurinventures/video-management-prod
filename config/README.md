@@ -36,9 +36,14 @@ To deploy changes to production:
 # SSH to EC2
 ssh -i ~/Documents/keys/per_aspera/per-aspera-key.pem ec2-user@54.198.253.138
 
-# Sync changes to production directory
-rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__'
+# Pull latest code
+cd ~/video-management && git pull
+
+# Sync to production directory
+rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__' --exclude='*.pyc'
 
 # Restart the service
 sudo systemctl restart mv-internal.service
 ```
+
+See `INFRASTRUCTURE.md` for full server documentation.
