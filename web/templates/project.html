@@ -11,17 +11,19 @@
     // Restore sidebar state BEFORE first paint to prevent layout shift
     (function() {
         var style = document.createElement('style');
-        var css = '';
+        // Always disable chevron transitions on initial load
+        var css = '.sidebar-section-toggle { transition: none !important; }';
 
         // Projects section - if explicitly collapsed
         if (localStorage.getItem('projectsExpanded') === 'false') {
             css += '#projectsSection { display: none !important; }';
-            css += '#projectsHeader:not(.expanded) .sidebar-section-toggle { transform: rotate(0deg) !important; }';
+            css += '#projectsHeader .sidebar-section-toggle { transform: rotate(0deg) !important; }';
         }
 
         // Library section - if explicitly collapsed
         if (localStorage.getItem('libraryExpanded') === 'false') {
             css += '#librarySection { display: none !important; }';
+            css += '#libraryHeader .sidebar-section-toggle { transform: rotate(0deg) !important; }';
         }
 
         // Sidebar collapsed
@@ -29,11 +31,9 @@
             css += '.sidebar { width: 0 !important; transform: translateX(-260px) !important; }';
         }
 
-        if (css) {
-            style.id = 'sidebar-state-override';
-            style.textContent = css;
-            document.head.appendChild(style);
-        }
+        style.id = 'sidebar-state-override';
+        style.textContent = css;
+        document.head.appendChild(style);
     })();
     </script>
 </head>
