@@ -12,7 +12,7 @@
     (function() {
         var style = document.createElement('style');
         // Always disable chevron transitions on initial load
-        var css = '.sidebar-section-toggle { transition: none !important; }';
+        var css = '.sidebar-section-toggle { transition: none !important; } .recents-project-chevron { transition: none !important; }';
 
         // Projects section - if explicitly collapsed
         if (localStorage.getItem('projectsExpanded') === 'false') {
@@ -3406,7 +3406,7 @@
             <div id="projectsList" class="projects-list">
                 {% for project in sidebar_projects %}
                 <a href="/project/{{ project.id }}" class="project-item">
-                    <span class="project-dot" style="background: {{ project.color }}"></span>
+                    <span class="project-color-dot" style="background: {{ project.color }}"></span>
                     <span class="project-name">{{ project.name }}</span>
                     {% if project.conversation_count > 0 %}
                     <span class="project-count">{{ project.conversation_count }}</span>

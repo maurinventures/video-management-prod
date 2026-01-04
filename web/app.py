@@ -1716,7 +1716,9 @@ def project_page(project_id):
         if not project:
             return redirect(url_for('chat'))
 
-    return render_template('project.html', project_id=project_id)
+    sidebar_projects, _, _ = get_sidebar_data(user_id)
+    return render_template('project.html', project_id=project_id,
+                         sidebar_projects=sidebar_projects)
 
 
 @app.route('/ai-logs')

@@ -902,7 +902,15 @@
         </div>
         <div class="sidebar-section-items expanded" id="projectsSection">
             <div id="projectsList" class="projects-list">
-                <!-- Projects loaded dynamically -->
+                {% for project in sidebar_projects %}
+                <a href="/project/{{ project.id }}" class="project-item{% if project.id == project_id %} active{% endif %}">
+                    <span class="project-color-dot" style="background: {{ project.color }}"></span>
+                    <span class="project-name">{{ project.name }}</span>
+                    {% if project.conversation_count > 0 %}
+                    <span class="project-count">{{ project.conversation_count }}</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
             </div>
             <button class="create-project-btn" onclick="showCreateProjectModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
