@@ -1,0 +1,27 @@
+{
+  "name": "video-management-prod",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "node tests/ui-tests.spec.js",
+    "test:ui": "node tests/ui-tests.spec.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maurinventures/video-management-prod.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/maurinventures/video-management-prod/issues"
+  },
+  "homepage": "https://github.com/maurinventures/video-management-prod#readme",
+  "description": "",
+  "dependencies": {
+    "playwright": "^1.57.0"
+  }
+}
