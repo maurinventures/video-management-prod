@@ -53,11 +53,12 @@
     {% include '_dropdown_menu.html' %}
 
     <!-- Floating sidebar toggle when collapsed -->
-    <button class="sidebar-toggle-floating" data-action="toggle-sidebar" title="Open sidebar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <path d="M9 3v18"/>
-        </svg>
+    <button class="sidebar-toggle-floating group" data-action="toggle-sidebar" title="Open sidebar">
+        <div class="sidebar-toggle-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M16.5 4C17.3284 4 18 4.67157 18 5.5V14.5C18 15.3284 17.3284 16 16.5 16H3.5C2.67157 16 2 15.3284 2 14.5V5.5C2 4.67157 2.67157 4 3.5 4H16.5ZM7 15H16.5C16.7761 15 17 14.7761 17 14.5V5.5C17 5.22386 16.7761 5 16.5 5H7V15ZM3.5 5C3.22386 5 3 5.22386 3 5.5V14.5C3 14.7761 3.22386 15 3.5 15H6V5H3.5Z"></path>
+            </svg>
+        </div>
     </button>
 
     <script src="{{ url_for('static', filename='js/shared.js') }}"></script>

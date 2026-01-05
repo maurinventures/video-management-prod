@@ -209,6 +209,15 @@ a:hover {
 }
 
 /* Sidebar toggle icon styling (user requested) */
+.sidebar-toggle-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    transition: all 0.3s ease;
+}
+
 .sidebar-toggle svg,
 .sidebar-toggle-floating svg {
     width: 20px !important;
@@ -216,11 +225,14 @@ a:hover {
     flex-shrink: 0;
     color: var(--color-text-muted) !important;
     transition: all 0.3s ease !important;
+    fill: currentColor;
 }
 
 /* On parent hover */
-.sidebar-toggle:hover svg,
-.sidebar-toggle-floating:hover svg {
+.sidebar-toggle.group:hover .sidebar-toggle-icon,
+.sidebar-toggle.group:hover svg,
+.sidebar-toggle-floating.group:hover .sidebar-toggle-icon,
+.sidebar-toggle-floating.group:hover svg {
     color: var(--color-text) !important;
 }
 
