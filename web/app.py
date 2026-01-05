@@ -1807,7 +1807,7 @@ def chat_recents():
     with DatabaseSession() as db_session:
         conversations = db_session.query(Conversation).filter(
             Conversation.user_id == user_id
-        ).order_by(Conversation.updated_at.desc()).all()
+        ).order_by(Conversation.starred.desc(), Conversation.updated_at.desc()).all()
 
         conversations_data = [{
             'id': str(c.id),
