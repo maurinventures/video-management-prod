@@ -223,3 +223,47 @@ a:hover {
 .sidebar-toggle-floating:hover svg {
     color: var(--color-text) !important;
 }
+
+/* Collapsed sidebar - icon-only mode */
+.sidebar.collapsed {
+    width: 60px !important;
+    transform: translateX(0) !important;
+}
+
+/* Hide text in collapsed sidebar */
+.sidebar.collapsed .sidebar-logo,
+.sidebar.collapsed .new-chat-btn span:not(.new-chat-icon),
+.sidebar.collapsed .sidebar-nav-item span:not(svg),
+.sidebar.collapsed .sidebar-section-header-left span:not(svg),
+.sidebar.collapsed .sidebar-section-title,
+.sidebar.collapsed .conversation-title,
+.sidebar.collapsed .recents-project-name,
+.sidebar.collapsed .user-name,
+.sidebar.collapsed .sidebar-divider {
+    display: none !important;
+}
+
+/* Center icons in collapsed sidebar */
+.sidebar.collapsed .new-chat-btn,
+.sidebar.collapsed .sidebar-nav-item,
+.sidebar.collapsed .sidebar-section-header {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Hide sections when collapsed */
+.sidebar.collapsed .conversations-list,
+.sidebar.collapsed .sidebar-section-items {
+    display: none !important;
+}
+
+/* User info in collapsed mode */
+.sidebar.collapsed .user-info {
+    justify-content: center !important;
+}
+
+/* Hide floating toggle when sidebar is in collapsed icon mode */
+.sidebar.collapsed ~ .main-content .sidebar-toggle-floating {
+    display: none !important;
+}

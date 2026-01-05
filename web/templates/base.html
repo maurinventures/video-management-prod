@@ -61,19 +61,6 @@
     </button>
 
     <script src="{{ url_for('static', filename='js/shared.js') }}"></script>
-
-    <!-- Emergency sidebar fix - remove after one deployment -->
-    <script>
-    // Force sidebar to be visible on next page load
-    if (localStorage.getItem('sidebarCollapsed') === 'true') {
-        localStorage.setItem('sidebarCollapsed', 'false');
-        // Force reload to apply
-        if (document.readyState === 'loading') {
-            window.location.reload();
-        }
-    }
-    </script>
-
     {% block scripts %}{% endblock %}
 </body>
 </html>
