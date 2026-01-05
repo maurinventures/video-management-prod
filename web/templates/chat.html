@@ -628,6 +628,11 @@
 
     .chat-menu-container {
         position: relative;
+        display: none;  /* Hidden by default, shown via JS when conversation active */
+    }
+
+    .chat-menu-container.visible {
+        display: block;
     }
 
     .chat-menu-btn {
@@ -3661,6 +3666,12 @@ async function loadConversationData(conversationId) {
             document.getElementById('chatHeaderProjectName').textContent = currentProject.name;
             headerProject.classList.add('visible');
         }
+
+        // Show chat menu when conversation has messages
+        const chatMenuContainer = document.querySelector('.chat-menu-container');
+        if (chatMenuContainer && data.messages && data.messages.length > 0) {
+            chatMenuContainer.classList.add('visible');
+        }
     } catch (e) {
         console.error('Failed to load conversation:', e);
     }
@@ -4131,8 +4142,9 @@ function clearChat() {
     document.getElementById('welcomeScreen').style.display = 'flex';
     document.querySelector('.input-area').style.display = 'none';
 
-    // Hide header project badge (welcome screen has its own)
+    // Hide header project badge and menu (welcome screen has its own)
     document.getElementById('chatHeaderProject').classList.remove('visible');
+    document.querySelector('.chat-menu-container')?.classList.remove('visible');
 
     // Update greeting based on time of day
     const hour = new Date().getHours();
