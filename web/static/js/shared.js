@@ -259,18 +259,27 @@ function showToast(message, type = 'info') {
  * @param {string} projectId - UUID of the project
  */
 function toggleRecentsProject(projectId) {
-    const header = document.querySelector(`.recents-project-header[onclick*="${projectId}"]`);
-    const items = document.getElementById(`recents-project-${projectId}`);
+    const header = document.querySelector(`.recents-project-header[data-project-id="${projectId}"]`);
 
-    if (!header || !items) return;
+    if (!header) return;
 
-    // Toggle expanded class
-    header.classList.toggle('expanded');
-    items.classList.toggle('expanded');
+    // Get project name from the header
+    const projectNameElement = header.querySelector('.recents-project-name');
+    const projectName = projectNameElement ? projectNameElement.textContent.trim() : 'Project';
 
-    // Save state to localStorage
-    const isExpanded = items.classList.contains('expanded');
-    localStorage.setItem(`recents_project_${projectId}`, isExpanded);
+    // If we have a Chat object with assignToProject method, assign to project
+    if (window.Chat && typeof Chat.assignToProject === 'function') {
+        Chat.assignToProject(projectId, projectName);
+    } else {
+        // Fallback to old toggle behavior if Chat object not available
+        const items = document.getElementById(`recents-project-${projectId}`);
+        if (items) {
+            header.classList.toggle('expanded');
+            items.classList.toggle('expanded');
+            const isExpanded = items.classList.contains('expanded');
+            localStorage.setItem(`recents_project_${projectId}`, isExpanded);
+        }
+    }
 }
 
 /**
@@ -556,6 +565,12 @@ const Chat = {
             return;
         }
 
+        // Handle new chat case - create conversation first if needed
+        if (conversationId === 'new') {
+            showToast('Please send a message first to create a conversation', 'info');
+            return;
+        }
+
         try {
             showToast(`Uploading ${file.name}...`, 'info');
 
@@ -589,8 +604,14 @@ const Chat = {
     getConversationId() {
         // Extract conversation ID from current URL path
         const pathParts = window.location.pathname.split('/');
-        if (pathParts[1] === 'chat' && pathParts[2]) {
-            return pathParts[2];
+        if (pathParts[1] === 'chat') {
+            if (pathParts[2]) {
+                // Existing conversation
+                return pathParts[2];
+            } else {
+                // New chat page - treat as active conversation
+                return 'new';
+            }
         }
         return null;
     },
@@ -739,6 +760,12 @@ const Chat = {
         const conversationId = this.getConversationId();
         if (!conversationId) {
             showToast('No active conversation', 'error');
+            return;
+        }
+
+        // Handle new chat case - create conversation first if needed
+        if (conversationId === 'new') {
+            showToast('Please send a message first to create a conversation', 'info');
             return;
         }
 
