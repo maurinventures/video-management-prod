@@ -1,113 +1,51 @@
 # Claude Code Rules for MV Internal
 
-**Last Updated:** 2026-01-05 03:40 UTC
+**Last Updated:** 2026-01-05 04:00 UTC
 
 ---
 
-## MODEL REQUIREMENT — CRITICAL COST CONTROL
+## ⚠️ MODEL REQUIREMENT — CRITICAL COST CONTROL ⚠️
 
-⚠️ **MANDATORY: Use Claude Sonnet 4 (`claude-sonnet-4-20250514`) ONLY** ⚠️
+**MANDATORY: Use Claude Sonnet 4 (`claude-sonnet-4-20250514`) ONLY**
 
-**DO NOT USE:**
-- ❌ **Sonnet 4.5** (`claude-sonnet-4-5-20250929`) - Costs ~$10 USD per 30 minutes
-- ❌ **Opus 4.5** (`claude-opus-4-5-20251101`) - Extremely expensive
+| Model | Status | Cost |
+|-------|--------|------|
+| Sonnet 4 (`claude-sonnet-4-20250514`) | ✅ USE THIS | ~$2-3/30min |
+| Sonnet 4.5 (`claude-sonnet-4-5-20250929`) | ❌ DO NOT USE | ~$10/30min |
+| Opus 4.5 (`claude-opus-4-5-20251101`) | ❌ DO NOT USE | ~$30/30min |
 
-**ONLY USE:**
-- ✅ **Sonnet 4** (`claude-sonnet-4-20250514`) - Cost-effective for all tasks
-
-If the session starts with any model other than Sonnet 4, STOP immediately and inform the user to restart with the correct model.
+If session starts with wrong model, STOP and tell user to run:
+```bash
+export ANTHROPIC_MODEL=claude-sonnet-4-20250514
+claude
+```
 
 ---
 
 ## SESSION START — REQUIRED CONFIRMATION
 
-At the START of every session, Claude Code must:
-
-### 1. Confirm Model
+At the START of every session, output:
 
 ```
 ✅ Model: Claude Sonnet 4 (claude-sonnet-4-20250514)
-```
 
-**CRITICAL:** If using Sonnet 4.5 or Opus 4.5, STOP immediately and tell user:
-- Current model is TOO EXPENSIVE (costs ~$10/30min)
-- User must exit and restart session with Sonnet 4
-- Run: `claude config set model claude-sonnet-4-20250514`
-
-### 2. Confirm Task Understanding
-
-Before writing ANY code or running ANY command:
-
-```
 📋 TASK CONFIRMATION
 
 I will:
-1. [First thing I will do]
-2. [Second thing I will do]
-3. [Third thing I will do]
+1. [First thing]
+2. [Second thing]
+3. [Third thing]
 
 Files I will modify:
-- path/to/file1.html
-- path/to/file2.py
+- path/to/file.html
 
 I will NOT:
-- [Anything out of scope]
+- [Out of scope items]
 
 Proceed? (yes/no)
 ```
 
-Wait for user confirmation before proceeding.
-
-### 3. Read CLAUDE.md
-
-```
-✅ Read CLAUDE.md
-✅ SSH_HOST: mv-internal
-✅ DOMAIN: maurinventuresinternal.com
-✅ Will follow one-change-at-a-time rule
-```
-
----
-
-## SESSION LOGGING — REQUIRED
-
-At the END of every session, create a detailed log:
-
-```bash
-# Create session log with timestamp
-SESSION_LOG="session_$(date +%Y%m%d_%H%M%S).md"
-cat > "$SESSION_LOG" << 'EOF'
-# Session Log: [DATE]
-
-## Summary
-[One paragraph summary of what was accomplished]
-
-## Changes Made
-| File | Change | Lines |
-|------|--------|-------|
-| path/to/file | Description | 10-25 |
-
-## Commands Executed
-```bash
-[All significant commands run]
-```
-
-## Issues Encountered
-- [Issue 1 and resolution]
-
-## Current State
-[What works, what doesn't, what's next]
-
-## Verification Results
-- [ ] Tested X — PASS/FAIL
-- [ ] Tested Y — PASS/FAIL
-EOF
-
-# Show location
-echo "Session log saved to: $SESSION_LOG"
-```
-
-Save to project root. User will send to auditor.
+**Wait for user confirmation before proceeding.**
 
 ---
 
@@ -117,14 +55,14 @@ Save to project root. User will send to auditor.
 
 | Key | Value | Notes |
 |-----|-------|-------|
-| SSH_HOST | `mv-internal` | SSH config alias. Use for all ssh/scp/rsync. |
-| DOMAIN | `maurinventuresinternal.com` | NO subdomain. Not www. Not internal. |
+| SSH_HOST | `mv-internal` | SSH config alias |
+| DOMAIN | `maurinventuresinternal.com` | NO subdomain |
 | SERVER_IP | `54.198.253.138` | EC2 instance |
 | SSH_USER | `ec2-user` | |
 | SSH_KEY | `~/Documents/keys/per_aspera/per-aspera-key.pem` | |
-| REMOTE_PATH | `/home/ec2-user/mv-internal` | App location. NOT /var/www/ |
-| GIT_REPO_PATH | `/home/ec2-user/video-management` | Git repo (syncs to REMOTE_PATH) |
-| SERVICE_NAME | `mv-internal` | systemd service name |
+| REMOTE_PATH | `/home/ec2-user/mv-internal` | NOT /var/www/ |
+| GIT_REPO_PATH | `/home/ec2-user/video-management` | Git repo |
+| SERVICE_NAME | `mv-internal` | systemd service |
 
 ### Local Development
 
@@ -148,6 +86,149 @@ Save to project root. User will send to auditor.
 
 ---
 
+## ARCHITECTURE — SINGLE SOURCE OF TRUTH
+
+### Principle
+
+Every component, style, and data source must be defined **ONCE** and reused everywhere. Duplication leads to inconsistency.
+
+### Template Architecture
+
+| File | Purpose | Used By |
+|------|---------|---------|
+| `base.html` | Master layout (head, body, scripts) | ALL templates extend this |
+| `_sidebar.html` | Sidebar partial | Included in base.html |
+| `_dropdown_menu.html` | Shared dropdown menu | Included in base.html |
+| `_chat_input.html` | Chat input component | Chat pages |
+| `_message.html` | Chat message component | Chat pages |
+
+**Template Pattern:**
+```html
+<!-- base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-layout">
+        {% include '_sidebar.html' %}
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% include '_dropdown_menu.html' %}
+    <script src="{{ url_for('static', filename='js/shared.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+
+<!-- Any page (e.g., videos.html) -->
+{% extends 'base.html' %}
+{% block title %}Videos - MV Internal{% endblock %}
+{% block content %}
+<div class="videos-page">
+    <!-- Page-specific content only -->
+</div>
+{% endblock %}
+```
+
+### CSS Architecture
+
+| File | Purpose |
+|------|---------|
+| `base.css` | Variables, reset, typography |
+| `layout.css` | App structure, grid |
+| `sidebar.css` | Sidebar styles ONLY |
+| `components.css` | Buttons, inputs, cards, menus, tables |
+
+**Rules:**
+- NO inline `<style>` blocks in templates
+- NO duplicate CSS across files
+- Use CSS variables for colors, sizes
+- One component = one place in CSS
+
+### JavaScript Architecture
+
+| File | Purpose |
+|------|---------|
+| `shared.js` | ALL shared functionality |
+
+**shared.js Structure:**
+```javascript
+// Sidebar management
+const Sidebar = {
+    init() { },
+    toggle(sectionId) { },
+    saveState() { },
+    restoreState() { }
+};
+
+// Dropdown menu management  
+const DropdownMenu = {
+    show(event, targetId, targetType) { },
+    hide() { },
+    handleAction(action) { }
+};
+
+// Chat actions
+const ChatActions = {
+    star(chatId) { },
+    rename(chatId) { },
+    delete(chatId) { }
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    Sidebar.init();
+});
+```
+
+### Flask Architecture
+
+**Every route must use shared helper:**
+
+```python
+# In app.py
+
+def get_sidebar_data():
+    """Get data needed for sidebar - call in EVERY route"""
+    return {
+        'recent_projects': get_projects_with_recent_chats(),
+        'standalone_chats': get_standalone_recent_chats(),
+        'user': get_current_user()
+    }
+
+def render_with_sidebar(template, active_page, **kwargs):
+    """Render any template with sidebar data included"""
+    context = get_sidebar_data()
+    context['active_page'] = active_page
+    context.update(kwargs)
+    return render_template(template, **context)
+
+# All routes use this pattern:
+@app.route('/videos')
+def videos():
+    return render_with_sidebar('videos.html',
+        active_page='videos',
+        videos=get_all_videos()
+    )
+```
+
+### Why This Matters
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Sidebar looks different on /videos vs /chat | Duplicate sidebar HTML in each template | Single `_sidebar.html` partial |
+| CSS inconsistent across pages | Inline styles or duplicate CSS | Single CSS files, no inline |
+| Forgot to pass sidebar data to one route | Each route manually builds context | `render_with_sidebar()` helper |
+| Changed button style, only updated one place | Button CSS in multiple files | Single `components.css` |
+
+---
+
 ## RULES — DO NOT VIOLATE
 
 ### Rule 1: NEVER INVENT
@@ -161,16 +242,10 @@ Never invent, guess, or interpolate:
 
 If a value is not in this file or in existing code, **ASK**.
 
-**Wrong:** `internal.maurinventuresinternal.com` (invented subdomain)
-**Wrong:** `/var/www/mv-internal/` (invented path)
-**Wrong:** `class="project-dot"` when CSS defines `.project-color-dot`
-**Right:** Check this file first, grep existing code, then ask if not found.
-
 ### Rule 2: VERIFY BEFORE EXECUTE
 
 Before running any destructive or remote command:
 ```bash
-# Echo first
 echo "Will run: ssh $SSH_HOST ..."
 # Then execute
 ```
@@ -192,132 +267,81 @@ ssh mv-internal "sudo systemctl restart mv-internal"
 ssh mv-internal "sudo systemctl status mv-internal --no-pager | head -5"
 ```
 
-**Do not use any other deployment method.**
-
 ### Rule 4: ONE CHANGE AT A TIME
 
-For any code change:
 1. State what you will change and why
 2. Show the exact before/after
 3. Make the change
-4. Verify it works (provide test steps)
+4. Verify it works
 5. Commit with descriptive message
 6. Provide rollback command
 
 **Never batch multiple unrelated changes.**
 
-### Rule 5: NO TECHNICAL DEBT
+### Rule 5: NO DUPLICATION
 
-Before adding code:
-- [ ] Grep for similar code — reuse it
-- [ ] Check if it belongs in `shared.js` — put it there
-- [ ] Check for duplicate API calls — consolidate
+Before adding ANY code:
+```bash
+# Check if similar code exists
+grep -rn "similar pattern" web/
 
-Before deleting code:
-- [ ] Grep to confirm unused
-- [ ] Show grep results proving it's safe
+# Check if it belongs in shared location
+# - HTML component → create partial in templates/
+# - CSS → add to appropriate .css file
+# - JavaScript → add to shared.js
+# - Flask logic → add helper function
+```
 
 ### Rule 6: CSS/HTML CONSISTENCY
 
 Before using a CSS class:
 ```bash
-# Verify the class exists
 grep -n "\.classname" web/templates/*.html web/static/css/*.css
 ```
 
-Before creating a CSS class:
-```bash
-# Check no similar class exists
-grep -n "similar-name" web/templates/*.html
-```
-
-**Class naming conventions:**
-- Use existing class names exactly as defined
-- Sidebar items: `.project-item`, `.project-color-dot`, `.project-name`, `.project-count`
-- Do not create variants like `.project-dot` when `.project-color-dot` exists
+**Use existing class names exactly. Never create variants.**
 
 ### Rule 7: SERVER-SIDE RENDERING FOR SIDEBAR
 
-Sidebar content (projects list, recents list) must be **server-rendered via Jinja**, not loaded via JavaScript fetch.
+Sidebar content must be **server-rendered via Jinja**, not JavaScript fetch.
 
-**Why:** JavaScript-loaded content causes layout jitter on page load.
+**Why:** JavaScript-loaded content causes layout jitter.
 
-**Pattern:**
-```python
-# In Flask route
-@app.route('/page')
-def page():
-    projects = get_projects()
-    return render_template('page.html', projects=projects)
+### Rule 8: PARTIALS FOR SHARED COMPONENTS
+
+Any HTML that appears on multiple pages MUST be a partial:
+
+```bash
+# Check if component is duplicated
+grep -l "component-html" web/templates/*.html | wc -l
+# If > 1, extract to partial
 ```
-
-```html
-<!-- In Jinja template -->
-{% for project in projects %}
-<a href="/project/{{ project.id }}" class="project-item">
-    <span class="project-color-dot" style="background: {{ project.color }}"></span>
-    <span class="project-name">{{ project.name }}</span>
-</a>
-{% endfor %}
-```
-
-**Keep JavaScript only for:** Refreshing after user actions (create, delete, rename).
 
 ---
 
 ## TESTING CHECKLIST
 
-After ANY frontend change, verify:
+After ANY frontend change:
 
 - [ ] Hard refresh `/chat` — no console errors
-- [ ] Sidebar renders immediately — no jitter, no flash
-- [ ] Click sidebar items — navigation works, no jitter
-- [ ] Collapse/expand sections — state persists on reload
-- [ ] Mobile width — sidebar collapses appropriately
+- [ ] Sidebar renders immediately — no jitter
+- [ ] Click sidebar items — navigation works
+- [ ] Collapse/expand sections — state persists
+- [ ] Sidebar IDENTICAL on /chat, /projects, /videos, /audio, /personas
 
-After ANY backend change, verify:
+After ANY backend change:
 
 - [ ] Service restarts without error
 - [ ] `curl https://maurinventuresinternal.com/chat` returns 200
-- [ ] API endpoints return expected data
 
 ---
 
 ## AUTOMATED SITE AUDIT
 
-Run the full site audit after any significant UI changes or before major releases.
-
-### Setup (one-time)
-
-```bash
-cd ~/video-management
-npm install playwright
-npx playwright install chromium
-mkdir -p tests test-results
-```
-
-### Get Session Cookie
-
-1. Open https://maurinventuresinternal.com in browser
-2. DevTools (F12) → Application → Cookies
-3. Copy `session` cookie value
-4. Update `AUTH_COOKIE.value` in `tests/full-site-audit.js`
-
 ### Run Audit
 
 ```bash
 node tests/full-site-audit.js
-```
-
-### Review Results
-
-```bash
-# Summary in terminal
-# Detailed results:
-cat test-results/audit-results.json
-
-# Screenshots of failures:
-ls test-results/*.png
 ```
 
 ### When to Run
@@ -327,34 +351,11 @@ ls test-results/*.png
 | After fixing navigation bugs | ✅ Yes |
 | After changing sidebar | ✅ Yes |
 | After adding new routes | ✅ Yes |
-| After CSS-only changes | ⚠️ Optional |
 | Before marking feature complete | ✅ Yes |
-| After deployment to verify | ✅ Yes |
-
-### What It Tests
-
-- Sidebar navigation (all links go to correct URLs)
-- Chats page (lists chats, count accurate)
-- Projects page (loads, lists projects)
-- Chat functionality (header, share, dropdown)
-- Sidebar hover menus (••• button, menu opens)
-- All internal links (no 404s)
-
-### Fixing Failures
-
-After audit, failures are listed with details. Fix ONE at a time:
-
-1. Read the failure message
-2. Find the relevant code (`grep`)
-3. Fix it
-4. Deploy
-5. Re-run audit to confirm
 
 ---
 
 ## ROLLBACK PROCEDURE
-
-If deployment breaks something:
 
 ```bash
 # 1. Check what broke
@@ -363,13 +364,11 @@ ssh mv-internal "sudo journalctl -u mv-internal -n 50 --no-pager"
 # 2. Find last working commit
 git log --oneline -10
 
-# 3. Revert to specific commit
-git revert HEAD --no-edit  # Revert last commit
-# OR
-git reset --hard <commit-hash>  # Nuclear option
+# 3. Revert
+git revert HEAD --no-edit
 
-# 4. Force push and redeploy
-git push origin main --force
+# 4. Redeploy
+git push origin main
 ssh mv-internal "cd ~/video-management && git pull && rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__' --exclude='*.pyc'"
 ssh mv-internal "sudo systemctl restart mv-internal"
 ```
@@ -378,15 +377,12 @@ ssh mv-internal "sudo systemctl restart mv-internal"
 
 ## SSH CONFIG REFERENCE
 
-Local `~/.ssh/config` must contain:
 ```
 Host mv-internal
     HostName 54.198.253.138
     User ec2-user
     IdentityFile ~/Documents/keys/per_aspera/per-aspera-key.pem
 ```
-
-Any other hostname for this project is **WRONG**.
 
 ---
 
@@ -395,58 +391,57 @@ Any other hostname for this project is **WRONG**.
 | Symptom | Check |
 |---------|-------|
 | SSH fails | `~/.ssh/config` matches above |
-| Path not found | Use `/home/ec2-user/mv-internal`, not `/var/www/` |
+| Path not found | Use `/home/ec2-user/mv-internal` |
 | Service won't start | `sudo journalctl -u mv-internal -n 50` |
-| Changes not appearing | Did you `systemctl restart mv-internal`? |
-| Git conflicts | Server repo at `~/video-management`, app at `~/mv-internal` |
-| CSS class not working | Grep to verify class name matches exactly |
-| Sidebar jitters | Content must be server-rendered, not JS-fetched |
+| Changes not appearing | Did you `systemctl restart`? |
+| CSS not working | Grep to verify class name |
+| Sidebar inconsistent | Must use `_sidebar.html` partial |
+| Sidebar jitters | Must be server-rendered |
+
+---
+
+## SESSION LOGGING — REQUIRED
+
+At END of every session:
+
+```bash
+SESSION_LOG="session_$(date +%Y%m%d_%H%M%S).md"
+cat > "$SESSION_LOG" << 'EOF'
+# Session Log: [DATE]
+
+## Model Used
+claude-sonnet-4-20250514
+
+## Summary
+[What was accomplished]
+
+## Changes Made
+| File | Change |
+|------|--------|
+| path/to/file | Description |
+
+## Verification
+- [ ] Tested X — PASS/FAIL
+EOF
+echo "Session log: $SESSION_LOG"
+```
 
 ---
 
 ## SECRETS
 
-Credentials are **encrypted** with OpenSSL AES-256-CBC.
-
-| File | Purpose |
-|------|---------|
-| `config/credentials.yaml.enc` | Encrypted (committed) |
-| `config/credentials.yaml.template` | Structure reference |
-| `config/credentials.yaml` | Decrypted (gitignored, never commit) |
-
 ```bash
 # Decrypt
 openssl aes-256-cbc -d -pbkdf2 -in config/credentials.yaml.enc -out config/credentials.yaml
 
-# Re-encrypt after changes
+# Re-encrypt
 openssl aes-256-cbc -salt -pbkdf2 -in config/credentials.yaml -out config/credentials.yaml.enc
 ```
 
 ---
 
-## DATABASE
-
-- **Type:** PostgreSQL on AWS RDS
-- **Credentials:** In `config/credentials.yaml.enc`
-
----
-
-## GIT WORKFLOW
-
-1. Commit with clear, specific messages
-2. Push to `main` branch
-3. Deploy using canonical sequence
-4. Verify deployment succeeded
-5. Update `/docs/CHANGELOG.md`
-
----
-
 ## AFTER EVERY SESSION
 
-1. **Create session log** (see SESSION LOGGING section)
-2. **Update CHANGELOG.md** with:
-   - What changed and why
-   - Files modified
-   - Issues encountered
-   - Current state
-3. **Inform user** of log location for audit
+1. Create session log
+2. Update CHANGELOG.md
+3. Inform user of log location
