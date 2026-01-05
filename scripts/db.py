@@ -285,6 +285,7 @@ class ChatMessage(Base):
     role = Column(String(20), nullable=False)  # 'user', 'assistant', or 'system'
     content = Column(Text, nullable=False)
     clips_json = Column(JSONB, default=[])  # Clips associated with this message (for assistant messages)
+    attachments_json = Column(JSONB, default=[])  # File attachments associated with this message
     mentions = Column(JSONB, default=[])  # List of user IDs or 'mv-video' mentioned
     model = Column(String(50))  # Which model generated it (for assistant messages)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

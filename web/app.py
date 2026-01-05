@@ -5,6 +5,8 @@ import sys
 import json
 import re
 import secrets
+import uuid
+import mimetypes
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID
@@ -3083,6 +3085,92 @@ def api_leave_conversation(conversation_id):
         db_session.commit()
 
         return jsonify({'success': True})
+
+
+@app.route('/api/conversations/<conversation_id>/attachments', methods=['POST'])
+def api_upload_attachment(conversation_id):
+    """Upload file attachment to a conversation."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    user_id = UUID(session['user_id'])
+
+    # Check if file was uploaded
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    with DatabaseSession() as db_session:
+        # Verify conversation exists and user has access
+        conversation = db_session.query(Conversation).filter(
+            Conversation.id == UUID(conversation_id),
+            Conversation.user_id == user_id
+        ).first()
+
+        if not conversation:
+            return jsonify({'error': 'Conversation not found'}), 404
+
+        try:
+            # Generate unique filename and S3 key
+            file_extension = os.path.splitext(file.filename)[1].lower()
+            unique_filename = f"{uuid.uuid4()}{file_extension}"
+            s3_key = f"attachments/{conversation_id}/{unique_filename}"
+
+            # Detect MIME type
+            mime_type = mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+
+            # Get file size
+            file.seek(0, os.SEEK_END)
+            file_size = file.tell()
+            file.seek(0)
+
+            # Upload to S3
+            config = get_config()
+            bucket = config.s3_bucket
+            s3_client = get_s3_client()
+
+            s3_client.upload_fileobj(
+                file,
+                bucket,
+                s3_key,
+                ExtraArgs={
+                    'ContentType': mime_type,
+                    'Metadata': {
+                        'original_filename': file.filename,
+                        'uploaded_by': str(user_id),
+                        'conversation_id': conversation_id
+                    }
+                }
+            )
+
+            # Generate presigned URL for preview (valid for 24 hours)
+            preview_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': bucket, 'Key': s3_key},
+                ExpiresIn=86400  # 24 hours
+            )
+
+            # Create attachment metadata
+            attachment_data = {
+                'id': str(uuid.uuid4()),
+                'filename': file.filename,
+                's3_key': s3_key,
+                'file_type': mime_type,
+                'file_size': file_size,
+                'preview_url': preview_url,
+                'uploaded_at': datetime.utcnow().isoformat()
+            }
+
+            return jsonify({
+                'success': True,
+                'attachment': attachment_data
+            })
+
+        except Exception as e:
+            return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 
 @app.route('/api/clips/<conversation_id>/<int:clip_index>/comments', methods=['GET'])

@@ -305,6 +305,7 @@ const Chat = {
     conversationId: null,
     selectedModel: 'sonnet-4',
     isLoading: false,
+    pendingAttachments: [],
 
     elements: {},
 
@@ -426,6 +427,12 @@ const Chat = {
         document.querySelectorAll('.model-dropdown, .attach-dropdown').forEach(d => {
             d.classList.remove('open');
         });
+
+        // Also hide project submenu
+        const projectSubmenu = document.getElementById('projectSubmenu');
+        if (projectSubmenu) {
+            projectSubmenu.style.display = 'none';
+        }
     },
 
     selectModel(model) {
@@ -465,26 +472,30 @@ const Chat = {
     },
 
     handleAttachOption(action) {
-        this.closeAllDropdowns();
-
         switch (action) {
             case 'add-files':
+                this.closeAllDropdowns();
                 this.openFilePicker();
                 break;
             case 'screenshot':
-                showToast('Screenshot feature coming soon', 'info');
+                this.closeAllDropdowns();
+                this.captureScreenshot();
                 break;
             case 'add-to-project':
-                showToast('Project selection coming soon', 'info');
+                // Don't close dropdowns yet - keep submenu open
+                this.showProjectSubmenu();
                 break;
             case 'research':
+                this.closeAllDropdowns();
                 this.elements.input.value = '/research ';
                 this.elements.input.focus();
                 break;
             case 'web-search':
+                this.closeAllDropdowns();
                 // Toggle web search
                 break;
             default:
+                this.closeAllDropdowns();
                 console.log('Action:', action);
         }
     },
@@ -492,14 +503,247 @@ const Chat = {
     openFilePicker() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*,.pdf,.doc,.docx,.txt,.csv';
+        input.accept = '*/*'; // Accept all file types as requested
         input.multiple = true;
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
             const files = Array.from(e.target.files);
-            console.log('Files selected:', files.map(f => f.name));
-            // TODO: Handle file upload
+
+            if (files.length === 0) return;
+
+            // Upload each file
+            for (const file of files) {
+                await this.uploadFile(file);
+            }
         };
         input.click();
+    },
+
+    async uploadFile(file) {
+        // Get current conversation ID
+        const conversationId = this.getConversationId();
+        if (!conversationId) {
+            showToast('No active conversation', 'error');
+            return;
+        }
+
+        try {
+            showToast(`Uploading ${file.name}...`, 'info');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`/api/conversations/${conversationId}/attachments`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                showToast(`${file.name} uploaded successfully`, 'success');
+
+                // Add to pending attachments
+                this.pendingAttachments.push(result.attachment);
+                this.updateAttachButton();
+
+                console.log('Attachment uploaded:', result.attachment);
+            } else {
+                showToast(`Upload failed: ${result.error || 'Unknown error'}`, 'error');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showToast(`Upload failed: ${error.message}`, 'error');
+        }
+    },
+
+    getConversationId() {
+        // Extract conversation ID from current URL path
+        const pathParts = window.location.pathname.split('/');
+        if (pathParts[1] === 'chat' && pathParts[2]) {
+            return pathParts[2];
+        }
+        return null;
+    },
+
+    async captureScreenshot() {
+        // Check for browser support
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            showToast('Screen capture not supported in this browser', 'error');
+            return;
+        }
+
+        try {
+            showToast('Select screen to capture...', 'info');
+
+            // Request screen access
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    mediaSource: 'screen'
+                }
+            });
+
+            // Create video element to capture frame
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+
+            // Wait for video to load
+            await new Promise((resolve) => {
+                video.onloadedmetadata = resolve;
+            });
+
+            // Create canvas to capture frame
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // Stop the stream
+            stream.getTracks().forEach(track => track.stop());
+
+            // Convert canvas to blob
+            canvas.toBlob(async (blob) => {
+                if (blob) {
+                    // Create File object with timestamp filename
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const file = new File([blob], `screenshot-${timestamp}.png`, {
+                        type: 'image/png'
+                    });
+
+                    // Upload the screenshot
+                    await this.uploadFile(file);
+                } else {
+                    showToast('Failed to create screenshot', 'error');
+                }
+            }, 'image/png');
+
+        } catch (error) {
+            console.error('Screenshot capture error:', error);
+
+            if (error.name === 'NotAllowedError') {
+                showToast('Screen capture permission denied', 'error');
+            } else if (error.name === 'NotSupportedError') {
+                showToast('Screen capture not supported', 'error');
+            } else {
+                showToast('Screenshot capture failed', 'error');
+            }
+        }
+    },
+
+    async showProjectSubmenu() {
+        const submenu = document.getElementById('projectSubmenu');
+        if (!submenu) return;
+
+        // Load and display projects
+        await this.loadProjects();
+
+        // Show the submenu
+        submenu.style.display = 'block';
+    },
+
+    async loadProjects() {
+        try {
+            const response = await fetch('/api/projects');
+            const result = await response.json();
+
+            if (response.ok && result.projects) {
+                this.displayProjects(result.projects);
+            } else {
+                console.error('Failed to load projects:', result.error);
+                showToast('Failed to load projects', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            showToast('Error loading projects', 'error');
+        }
+    },
+
+    displayProjects(projects) {
+        const projectList = document.getElementById('projectList');
+        if (!projectList) return;
+
+        // Clear existing projects
+        projectList.innerHTML = '';
+
+        if (projects.length === 0) {
+            projectList.innerHTML = `
+                <div class="no-projects">
+                    <span style="color: var(--color-text-secondary); font-size: 11px; padding: 16px; display: block; text-align: center;">
+                        No projects yet
+                    </span>
+                </div>
+            `;
+            return;
+        }
+
+        // Add each project
+        projects.forEach(project => {
+            const projectElement = document.createElement('button');
+            projectElement.className = 'project-option';
+            projectElement.dataset.projectId = project.id;
+            projectElement.innerHTML = `
+                <div class="project-color-dot" style="background-color: ${project.color || '#6B7280'}"></div>
+                <div class="project-info">
+                    <div class="project-name">${project.name}</div>
+                    ${project.description ? `<div class="project-description">${project.description}</div>` : ''}
+                </div>
+            `;
+
+            projectElement.addEventListener('click', () => {
+                this.assignToProject(project.id, project.name);
+            });
+
+            projectList.appendChild(projectElement);
+        });
+
+        // Add event listener for create new project button
+        const createBtn = document.querySelector('.project-option.create-new');
+        if (createBtn) {
+            createBtn.onclick = () => this.showCreateProjectModal();
+        }
+    },
+
+    async assignToProject(projectId, projectName) {
+        const conversationId = this.getConversationId();
+        if (!conversationId) {
+            showToast('No active conversation', 'error');
+            return;
+        }
+
+        try {
+            showToast(`Adding to ${projectName}...`, 'info');
+
+            const response = await fetch(`/api/conversations/${conversationId}/project`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: projectId
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                showToast(`Added to ${projectName}`, 'success');
+                this.closeAllDropdowns();
+                // TODO: Update UI to show project assignment
+            } else {
+                showToast(`Failed to add to project: ${result.error || 'Unknown error'}`, 'error');
+            }
+        } catch (error) {
+            console.error('Project assignment error:', error);
+            showToast('Failed to add to project', 'error');
+        }
+    },
+
+    showCreateProjectModal() {
+        // TODO: Implement create project modal
+        showToast('Create project modal coming soon', 'info');
+        this.closeAllDropdowns();
     },
 
     async send() {
@@ -512,12 +756,15 @@ const Chat = {
         // Switch to chat mode
         this.elements.page.classList.add('has-messages');
 
-        // Add user message
-        this.addMessage('user', message);
+        // Add user message with attachments
+        const attachments = [...this.pendingAttachments]; // Copy attachments
+        this.addMessage('user', message, false, attachments);
 
-        // Clear input
+        // Clear input and pending attachments
         this.elements.input.value = '';
         this.autoResize();
+        this.pendingAttachments = [];
+        this.updateAttachButton();
 
         // Add loading message
         const loadingId = this.addMessage('assistant', '', true);
@@ -529,7 +776,8 @@ const Chat = {
                 body: JSON.stringify({
                     message,
                     conversation_id: this.conversationId,
-                    model: this.selectedModel
+                    model: this.selectedModel,
+                    attachments: attachments.length > 0 ? attachments : undefined
                 })
             });
 
@@ -557,13 +805,20 @@ const Chat = {
         }
     },
 
-    addMessage(role, content, isLoading = false) {
+    addMessage(role, content, isLoading = false, attachments = []) {
         const id = 'msg-' + Date.now();
         const div = document.createElement('div');
         div.id = id;
         div.className = `message message-${role}${isLoading ? ' loading' : ''}`;
 
+        // Build attachments HTML
+        let attachmentsHtml = '';
+        if (attachments && attachments.length > 0) {
+            attachmentsHtml = `<div class="message-attachments">${attachments.map(attachment => this.renderAttachment(attachment)).join('')}</div>`;
+        }
+
         div.innerHTML = `
+            ${attachmentsHtml}
             <div class="message-content">
                 ${isLoading ? '<div class="typing-dots"><span></span><span></span><span></span></div>' : this.formatContent(content)}
             </div>
@@ -586,6 +841,114 @@ const Chat = {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/\n/g, '<br>');
+    },
+
+    renderAttachment(attachment) {
+        const isImage = attachment.file_type.startsWith('image/');
+        const isVideo = attachment.file_type.startsWith('video/');
+        const isAudio = attachment.file_type.startsWith('audio/');
+
+        if (isImage) {
+            return `
+                <div class="attachment attachment-image" data-attachment-id="${attachment.id}">
+                    <img src="${attachment.preview_url}" alt="${attachment.filename}" onclick="window.open('${attachment.preview_url}', '_blank')">
+                    <div class="attachment-info">
+                        <span class="attachment-name">${attachment.filename}</span>
+                        <span class="attachment-size">${this.formatFileSize(attachment.file_size)}</span>
+                    </div>
+                </div>
+            `;
+        } else if (isVideo) {
+            return `
+                <div class="attachment attachment-video" data-attachment-id="${attachment.id}">
+                    <video controls preload="metadata">
+                        <source src="${attachment.preview_url}" type="${attachment.file_type}">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="attachment-info">
+                        <span class="attachment-name">${attachment.filename}</span>
+                        <span class="attachment-size">${this.formatFileSize(attachment.file_size)}</span>
+                    </div>
+                </div>
+            `;
+        } else if (isAudio) {
+            return `
+                <div class="attachment attachment-audio" data-attachment-id="${attachment.id}">
+                    <div class="attachment-icon">🎵</div>
+                    <div class="attachment-details">
+                        <div class="attachment-info">
+                            <span class="attachment-name">${attachment.filename}</span>
+                            <span class="attachment-size">${this.formatFileSize(attachment.file_size)}</span>
+                        </div>
+                        <audio controls>
+                            <source src="${attachment.preview_url}" type="${attachment.file_type}">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Generic file
+            const fileIcon = this.getFileIcon(attachment.file_type, attachment.filename);
+            return `
+                <div class="attachment attachment-file" data-attachment-id="${attachment.id}">
+                    <div class="attachment-icon">${fileIcon}</div>
+                    <div class="attachment-details">
+                        <div class="attachment-info">
+                            <span class="attachment-name">${attachment.filename}</span>
+                            <span class="attachment-size">${this.formatFileSize(attachment.file_size)}</span>
+                        </div>
+                        <a href="${attachment.preview_url}" download="${attachment.filename}" class="attachment-download">Download</a>
+                    </div>
+                </div>
+            `;
+        }
+    },
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    },
+
+    getFileIcon(mimeType, filename) {
+        if (mimeType.startsWith('text/')) return '📄';
+        if (mimeType.includes('pdf')) return '📕';
+        if (mimeType.includes('word') || filename.endsWith('.doc') || filename.endsWith('.docx')) return '📘';
+        if (mimeType.includes('spreadsheet') || filename.endsWith('.xls') || filename.endsWith('.xlsx')) return '📊';
+        if (mimeType.includes('presentation') || filename.endsWith('.ppt') || filename.endsWith('.pptx')) return '📋';
+        if (mimeType.includes('zip') || mimeType.includes('archive')) return '📦';
+        if (mimeType.includes('json') || mimeType.includes('javascript')) return '⚙️';
+        return '📎';
+    },
+
+    updateAttachButton() {
+        const attachBtn = document.getElementById('attachBtn');
+        if (!attachBtn) return;
+
+        // Update button appearance to show pending attachments count
+        if (this.pendingAttachments.length > 0) {
+            attachBtn.classList.add('has-attachments');
+            attachBtn.title = `${this.pendingAttachments.length} attachment(s) ready to send`;
+
+            // Add a small badge showing count
+            let badge = attachBtn.querySelector('.attachment-count');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'attachment-count';
+                attachBtn.appendChild(badge);
+            }
+            badge.textContent = this.pendingAttachments.length;
+        } else {
+            attachBtn.classList.remove('has-attachments');
+            attachBtn.title = 'Attach files';
+            const badge = attachBtn.querySelector('.attachment-count');
+            if (badge) {
+                badge.remove();
+            }
+        }
     },
 
     checkExistingChat() {
