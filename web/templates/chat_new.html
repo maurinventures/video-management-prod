@@ -683,5 +683,164 @@ function deleteSelectedChats() {
         console.log('Deleting chats:', Array.from(selectedChats));
     }
 }
+
+// ==========================================
+// CHAT MENU FUNCTIONS
+// ==========================================
+
+function openChatMenu(event, chatId, chatTitle, fromHeader = false) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.getElementById('chatMenu');
+    if (!menu) return;
+
+    // Toggle off if same chat
+    if (menu.classList.contains('open') && window.menuChatId === chatId) {
+        closeChatMenu();
+        return;
+    }
+
+    window.menuChatId = chatId;
+    window.menuChatTitle = chatTitle;
+
+    // Position the menu
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    if (fromHeader) {
+        // Below the title button
+        menu.style.top = (rect.bottom + 6) + 'px';
+        menu.style.left = rect.left + 'px';
+    } else {
+        // Next to the ••• button in chat list
+        menu.style.top = rect.top + 'px';
+        menu.style.left = (rect.right + 6) + 'px';
+    }
+
+    menu.classList.add('open');
+
+    // Adjust if off-screen
+    setTimeout(() => {
+        const menuRect = menu.getBoundingClientRect();
+        if (menuRect.right > window.innerWidth) {
+            menu.style.left = (rect.left - menuRect.width - 6) + 'px';
+        }
+        if (menuRect.bottom > window.innerHeight) {
+            menu.style.top = (window.innerHeight - menuRect.height - 10) + 'px';
+        }
+    }, 0);
+}
+
+function closeChatMenu() {
+    const menu = document.getElementById('chatMenu');
+    if (menu) menu.classList.remove('open');
+    window.menuChatId = null;
+    window.menuChatTitle = null;
+}
+
+function chatMenuAction(action) {
+    if (!window.menuChatId) return;
+
+    switch (action) {
+        case 'star':
+            showToast('Starring coming soon', 'info');
+            break;
+
+        case 'rename':
+            const newName = prompt('Enter new name:', window.menuChatTitle);
+            if (newName && newName.trim() && newName !== window.menuChatTitle) {
+                fetch(`/api/conversations/${window.menuChatId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newName.trim() })
+                })
+                .then(r => {
+                    if (r.ok) {
+                        // Update the chat list item
+                        const listItem = document.querySelector(`[data-id="${window.menuChatId}"]`);
+                        if (listItem) {
+                            const titleEl = listItem.querySelector('.chat-list-title');
+                            if (titleEl) titleEl.textContent = newName.trim();
+                        }
+
+                        // Update conversations array
+                        const conv = conversations.find(c => c.id === window.menuChatId);
+                        if (conv) {
+                            conv.title = newName.trim();
+                        }
+
+                        // Re-render the list to reflect changes
+                        renderChatsList();
+
+                        showToast('Chat renamed', 'success');
+                    } else {
+                        showToast('Failed to rename', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to rename', 'error'));
+            }
+            break;
+
+        case 'addToProject':
+            showToast('Project picker coming soon', 'info');
+            break;
+
+        case 'delete':
+            if (confirm(`Delete "${window.menuChatTitle}"?`)) {
+                fetch(`/api/conversations/${window.menuChatId}`, { method: 'DELETE' })
+                .then(r => {
+                    if (r.ok) {
+                        // Remove from conversations array
+                        conversations = conversations.filter(c => c.id !== window.menuChatId);
+
+                        // Re-render the chat list
+                        renderChatsList();
+
+                        showToast('Chat deleted', 'success');
+                    } else {
+                        showToast('Failed to delete', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to delete', 'error'));
+            }
+            break;
+    }
+
+    closeChatMenu();
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#chatMenu') && !e.target.closest('.chat-list-action-btn')) {
+        closeChatMenu();
+    }
+});
+
+// Helper function for toast notifications
+function showToast(message, type = 'info') {
+    // Simple toast implementation - can be enhanced later
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#059669' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
 </script>
 {% endblock %}
