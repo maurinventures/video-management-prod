@@ -1,6 +1,6 @@
 # Claude Code Rules for MV Internal
 
-**Last Updated:** 2026-01-05 09:15 UTC
+**Last Updated:** 2026-01-05
 
 ---
 
@@ -28,7 +28,6 @@ claude
 
 1. **TEST THE CURRENT STATE FIRST**
    ```bash
-   # Verify what currently works BEFORE touching anything
    curl -s https://maurinventuresinternal.com/chat | head -20
    curl -s https://maurinventuresinternal.com/chat/recents | head -20
    curl -s https://maurinventuresinternal.com/projects | head -20
@@ -60,8 +59,6 @@ claude
 
 ## 🔒 PROTECTED FILES — EXTRA CAUTION REQUIRED
 
-These files are CRITICAL. Breaking them breaks the entire app:
-
 | File | What it does | Extra review required |
 |------|--------------|----------------------|
 | `web/app.py` | All routes and API | YES - test every endpoint |
@@ -79,7 +76,6 @@ File: [filename]
 Current behavior I am PRESERVING:
 1. [Thing that works now]
 2. [Another thing that works]
-3. [Another thing]
 
 Specific change I am making:
 - [Exact change, line numbers if possible]
@@ -93,6 +89,183 @@ I confirm this change will NOT break:
 
 Proceed? (yes/no)
 ```
+
+---
+
+## 🔍 TECHNICAL DEBT AUDIT PROTOCOL
+
+### Triggering an Audit
+
+When user says: "run audit", "analyze tech debt", "find duplication", or "check code quality"
+
+### Audit Mode Rules
+
+1. **DO NOT modify any code**
+2. **Read and analyze only**
+3. **Output report to `logs/audit_YYYYMMDD_HHMM.md`**
+
+### Audit Report Format
+
+```markdown
+# Tech Debt Audit - [DATE]
+
+## Summary
+- Total issues found: X
+- High priority: X
+- Medium priority: X
+- Low priority: X
+
+## 1. Duplicated Code
+| Location 1 | Location 2 | Lines | Similarity |
+|------------|------------|-------|------------|
+| file.py:45-60 | other.py:100-115 | 15 | ~90% |
+
+## 2. Long Functions (>50 lines)
+| File | Function | Lines | Recommendation |
+|------|----------|-------|----------------|
+| app.py | handle_chat() | 87 | Split into 2-3 functions |
+
+## 3. Hardcoded Values (should be constants)
+| File | Line | Value | Suggested Constant |
+|------|------|-------|-------------------|
+| app.py | 23 | "sk-xxx" | API_KEY |
+
+## 4. Dead Code (potentially unused)
+| File | Lines | Code | Confidence |
+|------|-------|------|------------|
+| shared.js | 200-215 | oldFunction() | 70% - verify before removing |
+
+## 5. Pattern Inconsistencies
+| Issue | Examples | Recommendation |
+|-------|----------|----------------|
+| Mixed quote styles | file1.py uses ", file2.py uses ' | Standardize on " |
+
+## Recommended Fix Order
+1. [Safest, highest impact fix]
+2. [Next safest]
+3. [etc.]
+```
+
+### After Audit
+
+**STOP and wait for user to pick which item to fix.**
+
+---
+
+## 🔧 SAFE REFACTORING PROTOCOL
+
+### BANNED WORDS - Never interpret these loosely
+
+| Word | Problem | Say instead |
+|------|---------|-------------|
+| "Refactor" | Too vague, leads to rewrites | "Move function X to file Y" |
+| "Clean up" | Subjective, causes deletions | "Add comments to function X" |
+| "Simplify" | Removes "unnecessary" code that's needed | "Remove only variable Z" |
+| "Improve" | License to rewrite everything | [Be specific or don't ask] |
+| "Make it better" | Meaningless, dangerous | [Be specific] |
+
+### Safe Refactoring Steps
+
+**For ANY structural change, follow this exact sequence:**
+
+#### Step 1: Create, Don't Modify
+```
+# NEVER modify working code directly
+# ALWAYS create new version first
+
+# Bad:
+def get_users():  # Modified existing function
+    new_implementation
+
+# Good:
+def get_users_v2():  # New function, old one untouched
+    new_implementation
+```
+
+#### Step 2: Show Before Applying
+```
+Before making this change, I will show you:
+
+CURRENT CODE (lines X-Y):
+[existing code]
+
+PROPOSED CODE:
+[new code]
+
+WHAT CHANGES:
+- Line 45: added parameter
+- Line 52: changed return value
+
+WHAT STAYS THE SAME:
+- All other logic unchanged
+
+Apply this change? (yes/no)
+```
+
+#### Step 3: One Micro-Change at a Time
+
+| Task | Break into |
+|------|------------|
+| Extract duplicated code | 1. Create shared function (don't use it yet) → 2. Update first usage → test → 3. Update second usage → test |
+| Move function to new file | 1. Copy to new file → 2. Add import → test → 3. Delete from old file → test |
+| Rename function | 1. Create alias with new name → 2. Update callers one by one → test each → 3. Remove old name |
+| Change function signature | 1. Create new function with new signature → 2. Migrate callers one by one → 3. Deprecate old |
+
+#### Step 4: Verify After Each Micro-Change
+```bash
+# After EVERY micro-change, run:
+curl -s -o /dev/null -w "%{http_code}" https://maurinventuresinternal.com/chat
+curl -s -o /dev/null -w "%{http_code}" https://maurinventuresinternal.com/chat/recents
+
+# If not 200, STOP and rollback
+```
+
+### Refactoring Session Format
+
+When user approves a fix from the audit:
+
+```
+🔧 REFACTORING: [Description]
+
+Audit item: #[number] from [audit file]
+
+This will be done in [N] micro-steps:
+
+Step 1/N: [Exact action]
+- File: [path]
+- Change: [specific change]
+- Risk: LOW
+
+[Show code diff]
+
+Apply step 1? (yes/no)
+```
+
+**Wait for approval before each step.**
+
+---
+
+## 🚫 REFACTORING HARD LIMITS
+
+### Never Do These During Refactoring
+
+- ❌ "While I'm here, I noticed..." — STOP, that's a separate task
+- ❌ "This would be cleaner if..." — STOP, not approved
+- ❌ "I'll also fix this small thing..." — STOP, scope creep
+- ❌ Change ANY code not explicitly discussed
+- ❌ Delete code because it "looks unused"
+- ❌ Rename variables for "clarity"
+- ❌ Reorder functions for "organization"
+- ❌ Add error handling that "should be there"
+
+### Always Do These During Refactoring
+
+- ✅ Touch ONLY the code explicitly approved
+- ✅ Show diff before applying
+- ✅ Wait for approval at each step
+- ✅ Test after each step
+- ✅ Stop if anything breaks
+- ✅ Keep old code until new code is verified
 
 ---
 
@@ -131,7 +304,7 @@ curl -s -o /dev/null -w "%{http_code}" https://maurinventuresinternal.com/api/co
 | Bug fix | 1-2 | <50 | Test after |
 | Small feature | 2-3 | <100 | Test after |
 | UI tweak | 1-2 | <30 | Visual check |
-| Refactor | 1 | <50 | STOP - too risky |
+| Single refactor step | 1 | <20 | Approval + test |
 | "Make it like X" | N/A | N/A | BREAK INTO PHASES |
 
 ### If user asks for large changes:
@@ -151,14 +324,12 @@ Phase 2: [Next small change]
 - Files: [list]  
 - Test: [how to verify]
 
-[etc.]
-
 Which phase should I start with?
 ```
 
 ---
 
-## 🔄 ROLLBACK PROCEDURE — KNOW THIS BY HEART
+## 🔄 ROLLBACK PROCEDURE
 
 If ANYTHING breaks after a deploy:
 
@@ -183,7 +354,7 @@ curl -s -o /dev/null -w "%{http_code}" https://maurinventuresinternal.com/chat
 
 ---
 
-## SESSION START — REQUIRED CONFIRMATION
+## ✅ SESSION START — REQUIRED CONFIRMATION
 
 At the START of every session, output:
 
@@ -217,8 +388,6 @@ Proceed? (yes/no)
 
 ## 🚫 BANNED PATTERNS
 
-### Never do these:
-
 ```python
 # ❌ BAD: Changing function signature that's called elsewhere
 def get_config(key, default):  # Was: def get_config()
@@ -236,8 +405,6 @@ def get_config(key, default):  # Was: def get_config()
 # Refactored for clarity  # Now it's broken
 ```
 
-### Always do these:
-
 ```python
 # ✅ GOOD: Add new code, don't modify working code
 def get_config_v2(key, default):  # New function, old one still works
@@ -251,7 +418,7 @@ def get_config_v2(key, default):  # New function, old one still works
 
 ---
 
-## PROJECT CONSTANTS — SINGLE SOURCE OF TRUTH
+## 📍 PROJECT CONSTANTS — SINGLE SOURCE OF TRUTH
 
 ### Server & Deployment
 
@@ -287,7 +454,7 @@ def get_config_v2(key, default):  # New function, old one still works
 
 ---
 
-## CANONICAL DEPLOY SEQUENCE
+## 🚀 CANONICAL DEPLOY SEQUENCE
 
 ```bash
 # 1. Commit with SPECIFIC message
@@ -309,27 +476,22 @@ ssh mv-internal "sudo journalctl -u mv-internal -n 10 --no-pager"
 
 ---
 
-## SESSION LOGGING
+## 📝 SESSION LOGGING
 
-### Logs go in `/logs` folder, NOT project root
-
-```bash
-mkdir -p logs
-# logs/session_20260105_081500.md
-```
-
-### When to create session logs
+Logs go in `/logs` folder, NOT project root.
 
 | Situation | Create Log? |
 |-----------|-------------|
 | Major feature completed | ✅ Yes |
 | Complex bug fix | ✅ Yes |
+| Audit completed | ✅ Yes (audit report) |
+| Refactoring session | ✅ Yes (what changed) |
 | Small single-file change | ❌ No |
 | Quick config tweak | ❌ No |
 
 ---
 
-## DEBUGGING
+## 🔧 DEBUGGING
 
 | Symptom | Check |
 |---------|-------|
@@ -342,7 +504,7 @@ mkdir -p logs
 
 ---
 
-## SSH CONFIG
+## 🔌 SSH CONFIG
 
 ```
 Host mv-internal
@@ -353,7 +515,7 @@ Host mv-internal
 
 ---
 
-## EMERGENCY CONTACTS
+## 🆘 EMERGENCY
 
 If everything is broken and you can't fix it:
 
