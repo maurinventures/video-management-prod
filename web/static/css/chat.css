@@ -159,8 +159,7 @@
 }
 
 .claude-input-box:focus-within {
-    border-color: var(--color-accent, #d97757);
-    box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.1);
+    border-color: #d1d5db;
 }
 
 .claude-textarea-wrapper {
