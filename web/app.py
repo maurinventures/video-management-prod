@@ -402,13 +402,13 @@ def transcript_detail(transcript_id):
             'speaker': s.speaker or None,
         } for s in segments]
 
-        return render_template('transcript_detail.html',
-                             transcript_id=transcript_id,
-                             video_id=str(video.id) if video else None,
-                             video_title=video.filename if video else "Unknown",
-                             known_speaker=known_speaker,
-                             segments=segment_list,
-                             total_duration=float(video.duration_seconds) if video and video.duration_seconds else 0)
+        return render_with_sidebar('transcript_detail.html', 'transcripts',
+                                  transcript_id=transcript_id,
+                                  video_id=str(video.id) if video else None,
+                                  video_title=video.filename if video else "Unknown",
+                                  known_speaker=known_speaker,
+                                  segments=segment_list,
+                                  total_duration=float(video.duration_seconds) if video and video.duration_seconds else 0)
 
 
 @app.route('/transcripts/search')
@@ -1864,7 +1864,7 @@ def project_detail(project_id):
         if not project:
             return redirect(url_for('projects_page'))
 
-    return render_template('project.html', project_id=project_id)
+    return render_with_sidebar('project.html', 'projects', project_id=project_id)
 
 
 @app.route('/ai-logs')
@@ -1872,7 +1872,7 @@ def ai_logs():
     """View AI call logs for quality monitoring."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('ai_logs.html')
+    return render_with_sidebar('ai_logs.html', 'ai_logs')
 
 
 @app.route('/api/ai-logs', methods=['GET'])
@@ -2010,11 +2010,11 @@ def persona_detail(persona_id):
         social_posts = db_session.query(SocialPost).filter(SocialPost.persona_id == persona.id).order_by(SocialPost.posted_at.desc()).limit(20).all()
         videos = db_session.query(Video).filter(Video.speaker == persona.speaker_name_in_videos).order_by(Video.created_at.desc()).limit(20).all() if persona.speaker_name_in_videos else []
 
-        return render_template('persona_detail.html',
-                             persona=persona,
-                             documents=documents,
-                             social_posts=social_posts,
-                             videos=videos)
+        return render_with_sidebar('persona_detail.html', 'personas',
+                                  persona=persona,
+                                  documents=documents,
+                                  social_posts=social_posts,
+                                  videos=videos)
 
 
 @app.route('/api/personas', methods=['GET'])
