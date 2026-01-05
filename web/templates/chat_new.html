@@ -865,31 +865,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Helper function for toast notifications
-function showToast(message, type = 'info') {
-    // Simple toast implementation - can be enhanced later
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#059669' : '#3b82f6'};
-        color: white;
-        border-radius: 8px;
-        z-index: 10000;
-        font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    `;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
-    }, 3000);
-}
+// showToast() function available via shared.js
 </script>
 {% endblock %}
