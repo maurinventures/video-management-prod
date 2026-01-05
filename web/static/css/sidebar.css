@@ -19,11 +19,33 @@
 .sidebar.collapsed .new-chat-btn,
 .sidebar.collapsed .sidebar-nav-item,
 .sidebar.collapsed .sidebar-section-header,
-.sidebar.collapsed .sidebar-section-items .sidebar-nav-item,
+.sidebar.collapsed .sidebar-section-items .sidebar-nav-item {
+    justify-content: center;
+    padding-left: 20px;
+    padding-right: 20px;
+    text-align: center;
+}
+
+/* Specific padding adjustments for collapsed state */
+.sidebar.collapsed .px-2 {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Keep user info in footer position, just center the avatar horizontally */
 .sidebar.collapsed .user-info {
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
+}
+
+/* Ensure icons are perfectly centered */
+.sidebar.collapsed .nav-item-icon,
+.sidebar.collapsed .new-chat-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
 }
 
 /* Hide text when collapsed, show only icons */
