@@ -3569,7 +3569,7 @@ let lastModel = '';
 let currentConversationId = CONVERSATION_ID || null;
 let currentProjectId = null;
 let currentProject = null;  // Full project info {id, name, color}
-let conversations = {{ conversations | tojson | safe }} || [];
+let conversations = {% if conversations is defined %}{{ conversations | tojson | safe }}{% else %}[]{% endif %};
 
 // Select mode state (for list views)
 let isSelectMode = false;
