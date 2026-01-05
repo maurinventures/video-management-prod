@@ -7,10 +7,12 @@ This script uses the application's database configuration to safely apply the mi
 import sys
 import os
 
-# Add the scripts directory to the path so we can import the database modules
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the project root to the path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
-from db import DatabaseSession, engine
+# Now import from scripts module
+from scripts.db import DatabaseSession
 from sqlalchemy import text
 
 def main():
