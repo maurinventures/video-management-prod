@@ -550,50 +550,6 @@
     display: block;
 }
 
-.model-option {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s;
-}
-
-.model-option:hover {
-    background: #f5f5f5;
-}
-
-.model-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.model-option-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1a1a1a;
-}
-
-.model-option-desc {
-    font-size: 12px;
-    color: #666;
-}
-
-.model-check {
-    color: #d97757;
-    font-weight: bold;
-    opacity: 0;
-}
-
-.model-option.selected .model-check {
-    opacity: 1;
-}
 
 .dropdown-divider {
     height: 1px;
@@ -605,79 +561,7 @@
     color: #666 !important;
 }
 
-/* Send Button */
-.send-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: #d97757;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: background 0.15s, opacity 0.15s;
-}
 
-.send-btn:disabled {
-    background: #e5e5e5;
-    cursor: not-allowed;
-}
-
-.send-btn:not(:disabled):hover {
-    background: #c56648;
-}
-
-/* Attachment Dropdown */
-.attach-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 8px;
-    background: white;
-    border: 1px solid #e5e5e5;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    min-width: 220px;
-    padding: 8px;
-    display: none;
-    z-index: 100;
-}
-
-.attach-dropdown.open {
-    display: block;
-}
-
-.attach-option {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #333;
-    text-align: left;
-    transition: background 0.15s;
-}
-
-.attach-option:hover {
-    background: #f5f5f5;
-}
-
-.attach-option .submenu-arrow {
-    margin-left: auto;
-    color: #999;
-}
-
-.attach-option .option-check {
-    margin-left: auto;
-    color: #d97757;
-}
 
 .has-submenu .submenu-arrow {
     opacity: 0.7;
@@ -891,13 +775,6 @@
     border-color: var(--color-border, #e5e5e5);
 }
 
-.send-btn {
-    background: var(--color-accent, #d97757);
-}
-
-.send-btn:not(:disabled):hover {
-    background: #c56648;
-}
 
 .model-check,
 .attach-option .option-check {
