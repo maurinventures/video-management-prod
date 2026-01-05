@@ -1,0 +1,80 @@
+{% extends 'base_new.html' %}
+
+{% block title %}Videos - MV Internal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="display: flex; align-items: center;">
+        <h1>Videos</h1>
+        <span class="page-subtitle">{{ videos|length }} videos</span>
+    </div>
+</div>
+
+<div class="toolbar">
+    <form method="GET" action="/videos" class="search-form">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search videos..." class="search-input">
+        <button type="submit" class="btn btn-sm">Search</button>
+        {% if search_query %}
+        <a href="/videos" class="btn btn-secondary btn-sm">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if videos %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Speaker</th>
+                    <th>Duration</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for video in videos %}
+                <tr {% if video.transcript_id %}onclick="window.location='/transcripts/{{ video.transcript_id }}'" style="cursor: pointer;"{% endif %}>
+                    <td class="col-title" title="{{ video.filename }}">
+                        {{ video.filename.replace('.mp4', '') }}
+                    </td>
+                    <td class="col-desc" title="{{ video.description or '' }}">
+                        {{ video.description or '—' }}
+                    </td>
+                    <td class="col-meta">
+                        {{ video.speaker or '—' }}
+                    </td>
+                    <td class="col-duration">
+                        {{ video.duration|duration }}
+                    </td>
+                    <td class="col-meta">
+                        {{ video.event_date.strftime('%Y-%m-%d') if video.event_date else '—' }}
+                    </td>
+                    <td>
+                        {% if video.has_transcript %}
+                        <span class="status-done">Transcribed</span>
+                        {% else %}
+                        <span class="status-pending">Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="table-footer">
+    {{ videos|length }} video{% if videos|length != 1 %}s{% endif %} &bull;
+    {{ videos|selectattr('has_transcript')|list|length }} transcribed
+</div>
+
+{% else %}
+<div class="empty-state">
+    <h2>No videos yet</h2>
+    <p>Upload videos to get started</p>
+</div>
+{% endif %}
+{% endblock %}

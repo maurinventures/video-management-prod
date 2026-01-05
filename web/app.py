@@ -284,11 +284,7 @@ def videos():
                 'extra_data': getattr(v, 'extra_data', None) or {},
             })
 
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
-    return render_template('videos.html', videos=video_list, search_query=search_query,
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped)
+    return render_with_sidebar('videos_new.html', 'videos', videos=video_list, search_query=search_query)
 
 
 @app.route('/audio')
