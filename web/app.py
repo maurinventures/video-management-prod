@@ -1985,11 +1985,7 @@ def personas():
                 'created_at': p.created_at
             })
 
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
-    return render_template('personas.html', personas=personas_data,
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped)
+    return render_with_sidebar('personas_new.html', 'personas', personas=personas_data)
 
 
 @app.route('/personas/<persona_id>')

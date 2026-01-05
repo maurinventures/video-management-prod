@@ -754,3 +754,59 @@
     font-size: 0.8125rem;
     color: var(--color-text-tertiary);
 }
+
+/* Personas page styles */
+.persona-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.persona-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.persona-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fef3f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.persona-name-text {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.col-tone {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-tertiary);
+    font-size: 0.75rem;
+}
+
+/* Modal variations */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-backdrop.show {
+    display: flex;
+}
