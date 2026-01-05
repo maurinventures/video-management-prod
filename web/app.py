@@ -1802,16 +1802,9 @@ def test_shared():
 @app.route('/chat')
 def chat():
     """New chat - shows welcome screen for starting a new conversation."""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
     # Support ?project=<id> to create new chat in a specific project
     project_id = request.args.get('project')
-    user_id = UUID(session['user_id'])
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
-    return render_template('chat.html', view='new', project_id=project_id,
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped)
+    return render_with_sidebar('chat_new.html', 'new_chat', view='new', project_id=project_id)
 
 
 @app.route('/chat/recents')
@@ -1819,8 +1812,8 @@ def chat_recents():
     """Chat list - shows all recent conversations."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     user_id = UUID(session['user_id'])
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
 
     # Fetch all conversations for main content area
     with DatabaseSession() as db_session:
@@ -1835,24 +1828,13 @@ def chat_recents():
             'message_count': len(c.messages)
         } for c in conversations]
 
-    return render_template('chat.html', view='recents',
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped,
-                         conversations=conversations_data)
+    return render_with_sidebar('chat_new.html', 'chats', view='recents', conversations=conversations_data)
 
 
 @app.route('/chat/<conversation_id>')
 def chat_conversation(conversation_id):
     """Specific conversation view."""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    user_id = UUID(session['user_id'])
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
-    return render_template('chat.html', view='conversation', conversation_id=conversation_id,
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped)
+    return render_with_sidebar('chat_new.html', 'new_chat', view='conversation', conversation_id=conversation_id)
 
 
 @app.route('/new')
