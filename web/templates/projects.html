@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project - MV Internal</title>
+    <title>Projects - MV Internal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -73,52 +73,32 @@
     .user-menu-item svg { width: 18px; height: 18px; color: #666; }
 
     /* Main content */
-    .main-content { flex: 1; height: 100vh; overflow-y: auto; }
+    .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 2rem; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 600; color: #1a1a1a; }
 
-    /* Project header */
-    .project-header { padding: 2rem 2rem 1.5rem; border-bottom: 1px solid #e5e4df; background: white; }
-    .project-header-top { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
-    .project-back { width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.15s; text-decoration: none; }
-    .project-back:hover { background: #f0efea; color: #1a1a1a; }
-    .project-back svg { width: 20px; height: 20px; }
-    .project-color-lg { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
-    .project-title { font-size: 1.5rem; font-weight: 600; color: #1a1a1a; flex: 1; }
-    .project-actions { display: flex; gap: 0.5rem; }
-    .project-action-btn { width: 36px; height: 36px; border: 1px solid #e5e4df; background: white; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.15s; }
-    .project-action-btn:hover { background: #f0efea; color: #1a1a1a; border-color: #d5d4cf; }
-    .project-action-btn svg { width: 18px; height: 18px; }
-    .project-description { font-size: 0.875rem; color: #666; margin-top: 0.5rem; max-width: 600px; }
+    /* Projects grid */
+    .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .project-card { background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.15s; border: 1px solid transparent; text-decoration: none; color: inherit; display: block; }
+    .project-card:hover { border-color: #e5e4df; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .project-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .project-color { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .project-card-name { font-size: 1rem; font-weight: 600; color: #1a1a1a; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .project-card-desc { font-size: 0.8125rem; color: #666; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 0.75rem; min-height: 2.4em; }
+    .project-card-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #888; }
+    .project-card-meta svg { width: 14px; height: 14px; }
 
-    /* Project body */
-    .project-body { padding: 1.5rem 2rem; }
-    .project-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .project-section-title { font-size: 0.875rem; font-weight: 600; color: #1a1a1a; }
-
-    /* Conversations list */
-    .project-conversations { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
-    .project-conversation-item { display: flex; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #f0efea; cursor: pointer; transition: background 0.15s; text-decoration: none; color: inherit; }
-    .project-conversation-item:last-child { border-bottom: none; }
-    .project-conversation-item:hover { background: #faf9f7; }
-    .project-conversation-icon { width: 36px; height: 36px; background: #f5f4ef; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 1rem; flex-shrink: 0; }
-    .project-conversation-icon svg { width: 18px; height: 18px; color: #666; }
-    .project-conversation-info { flex: 1; min-width: 0; }
-    .project-conversation-title { font-size: 0.875rem; font-weight: 500; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .project-conversation-meta { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
-    .project-conversation-arrow { color: #ccc; }
-    .project-conversation-arrow svg { width: 16px; height: 16px; }
-
-    /* New chat in project */
-    .new-chat-in-project { display: flex; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #f0efea; cursor: pointer; transition: background 0.15s; }
-    .new-chat-in-project:hover { background: #fef8f6; }
-    .new-chat-in-project-icon { width: 36px; height: 36px; background: #fef3f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 1rem; }
-    .new-chat-in-project-icon svg { width: 18px; height: 18px; color: #d97757; }
-    .new-chat-in-project-text { font-size: 0.875rem; font-weight: 500; color: #d97757; }
+    /* Create project card */
+    .create-project-card { background: #faf9f7; border: 2px dashed #e5e4df; border-radius: 12px; padding: 1.25rem; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; }
+    .create-project-card:hover { border-color: #d97757; background: #fef8f6; }
+    .create-project-card svg { width: 32px; height: 32px; color: #d97757; margin-bottom: 0.5rem; }
+    .create-project-card span { font-size: 0.875rem; font-weight: 500; color: #666; }
 
     /* Empty state */
-    .empty-conversations { padding: 3rem 2rem; text-align: center; }
-    .empty-conversations svg { width: 48px; height: 48px; color: #ccc; margin-bottom: 1rem; }
-    .empty-conversations h3 { font-size: 1rem; font-weight: 600; color: #1a1a1a; margin-bottom: 0.5rem; }
-    .empty-conversations p { font-size: 0.875rem; color: #666; }
+    .empty-state { text-align: center; padding: 4rem 2rem; }
+    .empty-state svg { width: 64px; height: 64px; color: #ccc; margin-bottom: 1rem; }
+    .empty-state h2 { font-size: 1.25rem; font-weight: 600; color: #1a1a1a; margin-bottom: 0.5rem; }
+    .empty-state p { font-size: 0.875rem; color: #666; margin-bottom: 1.5rem; }
 
     /* Modal styles */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
@@ -148,18 +128,6 @@
     .btn-primary:hover { background: #c56647; }
     .btn-secondary { background: #f0efea; color: #1a1a1a; }
     .btn-secondary:hover { background: #e5e4df; }
-    .btn-danger { background: #fee2e2; color: #dc2626; }
-    .btn-danger:hover { background: #fecaca; }
-
-    /* Dropdown menu */
-    .dropdown { position: relative; }
-    .dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: white; border: 1px solid #e5e4df; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); min-width: 180px; display: none; overflow: hidden; z-index: 100; }
-    .dropdown-menu.active { display: block; }
-    .dropdown-item { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem 1rem; border: none; background: none; font-size: 0.875rem; color: #374151; cursor: pointer; text-align: left; font-family: inherit; transition: background 0.15s; }
-    .dropdown-item:hover { background: #f5f4ef; }
-    .dropdown-item svg { width: 16px; height: 16px; color: #666; }
-    .dropdown-item.danger { color: #dc2626; }
-    .dropdown-item.danger svg { color: #dc2626; }
 </style>
 
 <!-- Sidebar -->
@@ -236,69 +204,37 @@
 
 <!-- Main Content -->
 <div class="main-content">
-    <div class="project-header">
-        <div class="project-header-top">
-            <a href="/projects" class="project-back" title="Back to projects">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            </a>
-            <div class="project-color-lg" id="projectColor"></div>
-            <h1 class="project-title" id="projectTitle">Loading...</h1>
-            <div class="project-actions">
-                <button class="project-action-btn" onclick="openEditModal()" title="Edit project">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <div class="dropdown">
-                    <button class="project-action-btn" onclick="toggleDropdown(event)" title="More options">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                    </button>
-                    <div class="dropdown-menu" id="dropdownMenu">
-                        <button class="dropdown-item danger" onclick="deleteProject()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                            Delete project
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <p class="project-description" id="projectDescription"></p>
+    <div class="page-header">
+        <h1>Projects</h1>
     </div>
 
-    <div class="project-body">
-        <div class="project-section-header">
-            <h2 class="project-section-title">Chats</h2>
-        </div>
-        <div class="project-conversations" id="projectConversations">
-            <!-- Conversations loaded via JavaScript -->
-        </div>
+    <div class="projects-grid" id="projectsGrid">
+        <!-- Projects loaded via JavaScript -->
     </div>
 </div>
 
-<!-- Edit Project Modal -->
-<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+<!-- Create Project Modal -->
+<div class="modal-overlay" id="createModal" onclick="if(event.target===this)closeModal()">
     <div class="modal">
         <div class="modal-header">
-            <h2 class="modal-title">Edit project</h2>
-            <button class="modal-close" onclick="closeEditModal()">
+            <h2 class="modal-title">Create project</h2>
+            <button class="modal-close" onclick="closeModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
         </div>
         <div class="modal-body">
             <div class="form-group">
                 <label class="form-label">Name</label>
-                <input type="text" class="form-input" id="editProjectName">
+                <input type="text" class="form-input" id="projectName" placeholder="Project name" autofocus>
             </div>
             <div class="form-group">
-                <label class="form-label">Description</label>
-                <textarea class="form-input" id="editProjectDesc"></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Custom Instructions (for AI)</label>
-                <textarea class="form-input" id="editProjectInstructions" placeholder="Give the AI context about this project..."></textarea>
+                <label class="form-label">Description (optional)</label>
+                <textarea class="form-input" id="projectDesc" placeholder="What is this project about?"></textarea>
             </div>
             <div class="form-group">
                 <label class="form-label">Color</label>
-                <div class="color-picker" id="editColorPicker">
-                    <div class="color-option" style="background: #d97757" data-color="#d97757"></div>
+                <div class="color-picker" id="colorPicker">
+                    <div class="color-option selected" style="background: #d97757" data-color="#d97757"></div>
                     <div class="color-option" style="background: #e5a336" data-color="#e5a336"></div>
                     <div class="color-option" style="background: #7cb342" data-color="#7cb342"></div>
                     <div class="color-option" style="background: #26a69a" data-color="#26a69a"></div>
@@ -310,17 +246,16 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="saveProject()">Save changes</button>
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="createProject()">Create project</button>
         </div>
     </div>
 </div>
 
 <script src="/static/js/shared.js"></script>
 <script>
-const PROJECT_ID = '{{ project_id }}';
-let project = null;
-let editColor = '#d97757';
+let projects = [];
+let selectedColor = '#d97757';
 
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -342,89 +277,52 @@ function toggleUserMenu(event) {
     document.getElementById('userMenuDropdown').classList.toggle('active');
 }
 
-function toggleDropdown(event) {
-    event.stopPropagation();
-    document.getElementById('dropdownMenu').classList.toggle('active');
-}
-
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.sidebar-footer')) {
         document.getElementById('userMenuDropdown')?.classList.remove('active');
     }
-    if (!e.target.closest('.dropdown')) {
-        document.getElementById('dropdownMenu')?.classList.remove('active');
-    }
 });
 
-async function loadProject() {
+async function loadProjects() {
     try {
-        const response = await fetch(`/api/projects/${PROJECT_ID}`);
+        const response = await fetch('/api/projects');
         if (response.ok) {
-            project = await response.json();
-            renderProject();
-        } else if (response.status === 404) {
-            window.location.href = '/projects';
+            const data = await response.json();
+            projects = data.projects || [];
+            renderProjects();
         }
     } catch (error) {
-        console.error('Failed to load project:', error);
+        console.error('Failed to load projects:', error);
     }
 }
 
-function renderProject() {
-    document.title = `${project.name} - MV Internal`;
-    document.getElementById('projectTitle').textContent = project.name;
-    document.getElementById('projectColor').style.background = project.color || '#d97757';
-    document.getElementById('projectDescription').textContent = project.description || '';
-    document.getElementById('projectDescription').style.display = project.description ? 'block' : 'none';
-
-    renderConversations();
-}
-
-function renderConversations() {
-    const container = document.getElementById('projectConversations');
-    const conversations = project.conversations || [];
+function renderProjects() {
+    const grid = document.getElementById('projectsGrid');
 
     let html = `
-        <div class="new-chat-in-project" onclick="startNewChat()">
-            <div class="new-chat-in-project-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            </div>
-            <span class="new-chat-in-project-text">Start new chat</span>
+        <div class="create-project-card" onclick="openModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Create project</span>
         </div>
     `;
 
-    if (conversations.length === 0) {
+    projects.forEach(project => {
         html += `
-            <div class="empty-conversations">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <h3>No chats yet</h3>
-                <p>Start a new chat to begin working in this project</p>
-            </div>
+            <a href="/project/${project.id}" class="project-card">
+                <div class="project-card-header">
+                    <div class="project-color" style="background: ${project.color || '#d97757'}"></div>
+                    <div class="project-card-name">${escapeHtml(project.name)}</div>
+                </div>
+                <div class="project-card-desc">${escapeHtml(project.description) || 'No description'}</div>
+                <div class="project-card-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    ${project.conversation_count || 0} chat${project.conversation_count !== 1 ? 's' : ''}
+                </div>
+            </a>
         `;
-    } else {
-        conversations.forEach(conv => {
-            html += `
-                <a href="/chat?conversation=${conv.id}" class="project-conversation-item">
-                    <div class="project-conversation-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    </div>
-                    <div class="project-conversation-info">
-                        <div class="project-conversation-title">${escapeHtml(conv.title)}</div>
-                        <div class="project-conversation-meta">${conv.message_count} message${conv.message_count !== 1 ? 's' : ''}</div>
-                    </div>
-                    <div class="project-conversation-arrow">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                    </div>
-                </a>
-            `;
-        });
-    }
+    });
 
-    container.innerHTML = html;
-}
-
-function startNewChat() {
-    window.location.href = `/chat?project=${PROJECT_ID}`;
+    grid.innerHTML = html;
 }
 
 async function loadConversations() {
@@ -439,88 +337,65 @@ async function loadConversations() {
     }
 }
 
-function openEditModal() {
-    document.getElementById('editProjectName').value = project.name;
-    document.getElementById('editProjectDesc').value = project.description || '';
-    document.getElementById('editProjectInstructions').value = project.custom_instructions || '';
-    editColor = project.color || '#d97757';
-
-    document.querySelectorAll('#editColorPicker .color-option').forEach(el => {
-        el.classList.toggle('selected', el.dataset.color === editColor);
-    });
-
-    document.getElementById('editModal').classList.add('active');
+function openModal() {
+    document.getElementById('createModal').classList.add('active');
+    document.getElementById('projectName').focus();
 }
 
-function closeEditModal() {
-    document.getElementById('editModal').classList.remove('active');
+function closeModal() {
+    document.getElementById('createModal').classList.remove('active');
+    document.getElementById('projectName').value = '';
+    document.getElementById('projectDesc').value = '';
+    selectedColor = '#d97757';
+    document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+    document.querySelector('.color-option[data-color="#d97757"]').classList.add('selected');
 }
 
-document.getElementById('editColorPicker').addEventListener('click', function(e) {
+document.getElementById('colorPicker').addEventListener('click', function(e) {
     const option = e.target.closest('.color-option');
     if (option) {
-        document.querySelectorAll('#editColorPicker .color-option').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
         option.classList.add('selected');
-        editColor = option.dataset.color;
+        selectedColor = option.dataset.color;
     }
 });
 
-async function saveProject() {
-    const name = document.getElementById('editProjectName').value.trim();
-    const description = document.getElementById('editProjectDesc').value.trim();
-    const custom_instructions = document.getElementById('editProjectInstructions').value.trim();
+async function createProject() {
+    const name = document.getElementById('projectName').value.trim();
+    const description = document.getElementById('projectDesc').value.trim();
 
     if (!name) {
-        document.getElementById('editProjectName').focus();
+        document.getElementById('projectName').focus();
         return;
     }
 
     try {
-        const response = await fetch(`/api/projects/${PROJECT_ID}`, {
-            method: 'PUT',
+        const response = await fetch('/api/projects', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, custom_instructions, color: editColor })
+            body: JSON.stringify({ name, description, color: selectedColor })
         });
 
         if (response.ok) {
-            project = { ...project, name, description, custom_instructions, color: editColor };
-            renderProject();
-            closeEditModal();
-            showToast('Project updated', 'success');
+            const project = await response.json();
+            window.location.href = `/project/${project.id}`;
         } else {
             const error = await response.json();
-            alert(error.error || 'Failed to update project');
+            alert(error.error || 'Failed to create project');
         }
     } catch (error) {
-        console.error('Failed to update project:', error);
-        alert('Failed to update project');
+        console.error('Failed to create project:', error);
+        alert('Failed to create project');
     }
 }
 
-async function deleteProject() {
-    if (!confirm('Are you sure you want to delete this project? Chats will be preserved but unassigned.')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/projects/${PROJECT_ID}?permanent=true`, {
-            method: 'DELETE'
-        });
-
-        if (response.ok) {
-            window.location.href = '/projects';
-        } else {
-            const error = await response.json();
-            alert(error.error || 'Failed to delete project');
-        }
-    } catch (error) {
-        console.error('Failed to delete project:', error);
-        alert('Failed to delete project');
-    }
-}
+// Handle Enter key in modal
+document.getElementById('projectName').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') createProject();
+});
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadProject();
+    loadProjects();
     loadConversations();
 });
 </script>

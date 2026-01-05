@@ -14,12 +14,6 @@
         // Always disable chevron transitions on initial load
         var css = '.sidebar-section-toggle { transition: none !important; } .recents-project-chevron { transition: none !important; }';
 
-        // Projects section - if explicitly collapsed
-        if (localStorage.getItem('projectsExpanded') === 'false') {
-            css += '#projectsSection { display: none !important; }';
-            css += '#projectsHeader .sidebar-section-toggle { transform: rotate(0deg) !important; }';
-        }
-
         // Library section - if explicitly collapsed
         if (localStorage.getItem('libraryExpanded') === 'false') {
             css += '#librarySection { display: none !important; }';
@@ -285,76 +279,6 @@
         width: 100%;
         padding-left: 2.75rem;
         font-size: 0.8125rem;
-    }
-
-    .projects-list {
-        max-height: 200px;
-        min-height: 32px;
-        overflow-y: auto;
-        scrollbar-gutter: stable;
-    }
-
-    .project-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem 0.5rem 2.75rem;
-        font-size: 0.8125rem;
-        color: #444;
-        text-decoration: none;
-        border-radius: 0;
-        cursor: pointer;
-    }
-
-    .project-item:hover {
-        background: #f0efea;
-    }
-
-    .project-color-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .project-name {
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .project-count {
-        font-size: 0.75rem;
-        color: #888;
-    }
-
-    .create-project-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        width: calc(100% - 3.75rem);
-        margin: 0.25rem 1rem 0.25rem 2.75rem;
-        padding: 0.5rem 0.75rem;
-        background: transparent;
-        border: 1px dashed #ccc;
-        border-radius: 6px;
-        color: #666;
-        font-size: 0.8125rem;
-        font-family: inherit;
-        cursor: pointer;
-        transition: all 0.15s;
-    }
-
-    .create-project-btn:hover {
-        background: #f5f4ef;
-        border-color: #d97757;
-        color: #d97757;
-    }
-
-    .create-project-btn svg {
-        width: 14px;
-        height: 14px;
     }
 
     .sidebar-divider {
@@ -1015,214 +939,6 @@
 
     .select-action-btn.danger:hover {
         background: #fef2f2;
-    }
-
-    /* Projects List View */
-    .projects-list-view {
-        flex: 1;
-        padding: 2rem;
-        max-width: 900px;
-        width: 100%;
-        margin: 0 auto;
-        box-sizing: border-box;
-        display: none;
-    }
-
-    .projects-list-view.active {
-        display: block;
-    }
-
-    .projects-list-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-    }
-
-    .projects-list-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #1a1a1a;
-    }
-
-    .projects-new-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: #1a1a1a;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        font-family: inherit;
-    }
-
-    .projects-new-btn:hover {
-        background: #333;
-    }
-
-    .projects-new-btn svg {
-        width: 16px;
-        height: 16px;
-    }
-
-    .projects-search-wrapper {
-        margin-bottom: 1rem;
-    }
-
-    .projects-search {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        padding-left: 2.5rem;
-        border: 1px solid #e5e4df;
-        border-radius: 8px;
-        font-size: 0.9375rem;
-        font-family: inherit;
-        background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 0.75rem center;
-    }
-
-    .projects-search:focus {
-        outline: none;
-        border-color: #d97757;
-    }
-
-    .projects-count-row {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        font-size: 0.875rem;
-        color: #666;
-    }
-
-    .projects-select-btn {
-        color: #d97757;
-        background: none;
-        border: none;
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        font-family: inherit;
-    }
-
-    .projects-select-btn:hover {
-        text-decoration: underline;
-    }
-
-    .projects-list-container {
-        border-top: 1px solid #e5e4df;
-    }
-
-    .project-list-item {
-        display: flex;
-        align-items: center;
-        padding: 1rem 0;
-        border-bottom: 1px solid #e5e4df;
-        cursor: pointer;
-        transition: background 0.15s;
-    }
-
-    .project-list-item:hover {
-        background: #f9f9f7;
-        margin: 0 -1rem;
-        padding: 1rem;
-    }
-
-    .project-list-checkbox {
-        width: 18px;
-        height: 18px;
-        margin-right: 1rem;
-        accent-color: #d97757;
-        display: none;
-    }
-
-    .projects-list-view.select-mode .project-list-checkbox {
-        display: block;
-    }
-
-    .project-list-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 0.75rem;
-        flex-shrink: 0;
-    }
-
-    .project-list-icon svg {
-        width: 16px;
-        height: 16px;
-        color: white;
-    }
-
-    .project-list-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .project-list-title {
-        font-size: 0.9375rem;
-        font-weight: 500;
-        color: #1a1a1a;
-        margin-bottom: 0.25rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .project-list-meta {
-        font-size: 0.8125rem;
-        color: #888;
-    }
-
-    .project-list-actions {
-        opacity: 0;
-        transition: opacity 0.15s;
-    }
-
-    .project-list-item:hover .project-list-actions {
-        opacity: 1;
-    }
-
-    .project-list-action-btn {
-        width: 28px;
-        height: 28px;
-        border: none;
-        background: transparent;
-        color: #888;
-        cursor: pointer;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .project-list-action-btn:hover {
-        background: #e5e4df;
-        color: #1a1a1a;
-    }
-
-    .projects-select-actions {
-        display: none;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-        padding: 0.75rem 1rem;
-        background: #f5f4ef;
-        border-radius: 8px;
-    }
-
-    .projects-list-view.select-mode .projects-select-actions {
-        display: flex;
-    }
-
-    .projects-list-view.select-mode .projects-count-row {
-        display: none;
     }
 
     /* Library List View */
@@ -3391,36 +3107,12 @@
             </svg>
             Chats
         </a>
-        <a href="/chat/projects" class="sidebar-section-header expanded{% if view == 'projects' %} active{% endif %}" id="projectsHeader">
-            <div class="sidebar-section-header-left">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                Projects
-            </div>
-            <svg class="sidebar-section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="event.preventDefault(); event.stopPropagation(); toggleProjectsSection()">
-                <path d="M6 9l6 6 6-6"/>
+        <a href="/projects" class="sidebar-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
+            Projects
         </a>
-        <div class="sidebar-section-items expanded" id="projectsSection">
-            <div id="projectsList" class="projects-list">
-                {% for project in sidebar_projects %}
-                <a href="/project/{{ project.id }}" class="project-item">
-                    <span class="project-color-dot" style="background: {{ project.color }}"></span>
-                    <span class="project-name">{{ project.name }}</span>
-                    {% if project.conversation_count > 0 %}
-                    <span class="project-count">{{ project.conversation_count }}</span>
-                    {% endif %}
-                </a>
-                {% endfor %}
-            </div>
-            <button class="create-project-btn" onclick="showCreateProjectModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
-                Create project
-            </button>
-        </div>
         <div class="sidebar-section-header expanded" id="libraryHeader" onclick="toggleLibrarySection()">
             <div class="sidebar-section-header-left">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3561,52 +3253,6 @@
     </div>
 </div>
 
-<!-- Create Project Modal -->
-<div class="modal-overlay" id="createProjectModal" onclick="closeCreateProjectModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h2 class="modal-title">Create project</h2>
-            <button class="modal-close" onclick="closeCreateProjectModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label class="form-label" for="projectName">Name</label>
-                <input type="text" class="form-input" id="projectName" placeholder="e.g., Marketing Campaign Q1">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="projectDescription">Description (optional)</label>
-                <textarea class="form-textarea" id="projectDescription" placeholder="What is this project about?"></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="projectInstructions">Custom instructions (optional)</label>
-                <textarea class="form-textarea" id="projectInstructions" placeholder="Instructions for the AI when working in this project..."></textarea>
-                <div class="form-hint">The AI will follow these instructions for all conversations in this project.</div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Color</label>
-                <div class="color-picker" id="colorPicker">
-                    <div class="color-option selected" style="background: #d97757;" data-color="#d97757" onclick="selectProjectColor(this)"></div>
-                    <div class="color-option" style="background: #3b82f6;" data-color="#3b82f6" onclick="selectProjectColor(this)"></div>
-                    <div class="color-option" style="background: #10b981;" data-color="#10b981" onclick="selectProjectColor(this)"></div>
-                    <div class="color-option" style="background: #f59e0b;" data-color="#f59e0b" onclick="selectProjectColor(this)"></div>
-                    <div class="color-option" style="background: #8b5cf6;" data-color="#8b5cf6" onclick="selectProjectColor(this)"></div>
-                    <div class="color-option" style="background: #ec4899;" data-color="#ec4899" onclick="selectProjectColor(this)"></div>
-                    <div class="color-option" style="background: #6366f1;" data-color="#6366f1" onclick="selectProjectColor(this)"></div>
-                    <div class="color-option" style="background: #14b8a6;" data-color="#14b8a6" onclick="selectProjectColor(this)"></div>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeCreateProjectModal()">Cancel</button>
-            <button class="btn btn-primary" id="createProjectBtn" onclick="createProject()">Create project</button>
-        </div>
-    </div>
-</div>
-
 <!-- Main Chat Area -->
 <div class="main-content">
     <!-- Floating sidebar toggle (appears when sidebar is collapsed) -->
@@ -3679,34 +3325,6 @@
         </div>
         <div class="chats-list" id="chatsList">
             <!-- Chat items loaded dynamically -->
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Projects List View - shown only on /chat/projects route -->
-    {% if view == 'projects' %}
-    <div class="projects-list-view active" id="projectsListView">
-        <div class="projects-list-header">
-            <h1 class="projects-list-title">Projects</h1>
-            <button class="projects-new-btn" onclick="showCreateProjectModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                New project
-            </button>
-        </div>
-        <div class="projects-search-wrapper">
-            <input type="text" class="projects-search" id="projectsSearch" placeholder="Search your projects..." oninput="filterProjectsList()">
-        </div>
-        <div class="projects-count-row">
-            <span id="projectsCount">0 projects with MV Internal</span>
-            <button class="projects-select-btn" onclick="toggleProjectsSelectMode()">Select</button>
-        </div>
-        <div class="projects-select-actions">
-            <span class="select-count" id="projectsSelectCount">0 selected</span>
-            <button class="select-action-btn" onclick="toggleProjectsSelectMode()">Cancel</button>
-            <button class="select-action-btn danger" onclick="deleteSelectedProjects()">Delete</button>
-        </div>
-        <div class="projects-list-container" id="projectsListContainer">
-            <!-- Project items loaded dynamically -->
         </div>
     </div>
     {% endif %}
@@ -3936,23 +3554,16 @@ let conversations = [];
 
 // Select mode state (for list views)
 let isSelectMode = false;
-let isProjectsSelectMode = false;
 let selectedChats = new Set();
-let selectedProjects = new Set();
-let projects = [];
 
 // Initialize based on route
 document.addEventListener('DOMContentLoaded', async () => {
     // Sidebar data is now server-rendered by Jinja - no initial JS load needed
-    // loadProjects() and loadConversations() are kept for refreshing after actions
 
     // Initialize based on current route/view
     if (CURRENT_VIEW === 'recents') {
         // Chats list view - render list
         renderChatsList();
-    } else if (CURRENT_VIEW === 'projects') {
-        // Projects list view - render list
-        renderProjectsList();
     } else if (CURRENT_VIEW === 'conversation' && CONVERSATION_ID) {
         // Conversation view - load the specific conversation
         await loadConversationData(CONVERSATION_ID);
@@ -4116,125 +3727,7 @@ async function loadLibraryCounts() {
     }
 }
 
-// Projects List View Functions (route-based - navigate instead of toggle)
-function showProjectsListView() {
-    window.location.href = '/chat/projects';
-}
-
-function renderProjectsList() {
-    const container = document.getElementById('projectsListContainer');
-    const searchInput = document.getElementById('projectsSearch');
-    const projectsCount = document.getElementById('projectsCount');
-
-    // Only render if elements exist (projects view)
-    if (!container) return;
-
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-
-    const filteredProjects = projects.filter(proj =>
-        proj.name.toLowerCase().includes(searchTerm) ||
-        (proj.description && proj.description.toLowerCase().includes(searchTerm))
-    );
-
-    if (projectsCount) {
-        projectsCount.textContent = `${filteredProjects.length} project${filteredProjects.length !== 1 ? 's' : ''} with MV Internal`;
-    }
-
-    container.innerHTML = filteredProjects.map(proj => `
-        <div class="project-list-item" data-id="${proj.id}" onclick="openProjectFromList('${proj.id}')">
-            <input type="checkbox" class="project-list-checkbox"
-                   ${selectedProjects.has(proj.id) ? 'checked' : ''}
-                   onclick="event.stopPropagation(); toggleProjectSelection('${proj.id}')">
-            <div class="project-list-icon" style="background: ${proj.color || '#d97757'}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-            </div>
-            <div class="project-list-content">
-                <div class="project-list-title">${escapeHtml(proj.name)}</div>
-                <div class="project-list-meta">Last updated ${timeAgo(proj.updated_at)}</div>
-            </div>
-            <div class="project-list-actions">
-                <button class="project-list-action-btn" onclick="event.stopPropagation(); deleteProjectFromList('${proj.id}')" title="More">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function filterProjectsList() {
-    renderProjectsList();
-}
-
-function openProjectFromList(projectId) {
-    if (isProjectsSelectMode) {
-        toggleProjectSelection(projectId);
-        return;
-    }
-    window.location.href = `/project/${projectId}`;
-}
-
-function toggleProjectsSelectMode() {
-    isProjectsSelectMode = !isProjectsSelectMode;
-    const listView = document.getElementById('projectsListView');
-    if (isProjectsSelectMode) {
-        listView.classList.add('select-mode');
-        selectedProjects.clear();
-    } else {
-        listView.classList.remove('select-mode');
-        selectedProjects.clear();
-    }
-    renderProjectsList();
-    updateProjectsSelectCount();
-}
-
-function toggleProjectSelection(projectId) {
-    if (selectedProjects.has(projectId)) {
-        selectedProjects.delete(projectId);
-    } else {
-        selectedProjects.add(projectId);
-    }
-    renderProjectsList();
-    updateProjectsSelectCount();
-}
-
-function updateProjectsSelectCount() {
-    document.getElementById('projectsSelectCount').textContent = `${selectedProjects.size} selected`;
-}
-
-async function deleteSelectedProjects() {
-    if (selectedProjects.size === 0) return;
-    if (!confirm(`Delete ${selectedProjects.size} project${selectedProjects.size !== 1 ? 's' : ''}?`)) return;
-
-    for (const id of selectedProjects) {
-        try {
-            await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-        } catch (e) {
-            console.error('Failed to delete project:', e);
-        }
-    }
-
-    // Refresh
-    await loadProjects();
-    toggleProjectsSelectMode();
-    renderProjectsList();
-}
-
-async function deleteProjectFromList(projectId) {
-    if (!confirm('Delete this project?')) return;
-
-    try {
-        await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
-        projects = projects.filter(p => p.id !== projectId);
-        renderProjects();
-        renderProjectsList();
-    } catch (e) {
-        console.error('Failed to delete project:', e);
-    }
-}
+// Projects List View Functions removed - will be rebuilt as /projects page
 
 // showChatView - now route-based, navigates to appropriate chat route
 function showChatView() {
@@ -6395,112 +5888,8 @@ async function regenerateClip(clipIndex, feedback = '') {
 // ============================================================================
 // SIDEBAR & USER MENU FUNCTIONS
 // ============================================================================
-// toggleSidebar(), toggleProjectsSection(), toggleLibrarySection() - now in shared.js
-
-// Projects functionality
-let selectedProjectColor = '#d97757';
-
-async function loadProjects() {
-    try {
-        const res = await fetch('/api/projects');
-        if (res.ok) {
-            projects = await res.json();
-            renderProjects();
-
-            // If on projects view, re-render the list now that we have data
-            if (CURRENT_VIEW === 'projects') {
-                renderProjectsList();
-            }
-        }
-    } catch (e) {
-        console.error('Failed to load projects:', e);
-    }
-}
-
-function renderProjects() {
-    const projectsList = document.getElementById('projectsList');
-    if (!projectsList) return;
-
-    if (projects.length === 0) {
-        projectsList.innerHTML = '<div style="padding: 0.5rem 1rem 0.5rem 2.25rem; font-size: 0.75rem; color: #888;">No projects yet</div>';
-        return;
-    }
-
-    projectsList.innerHTML = projects.map(p => `
-        <a href="/project/${p.id}" class="project-item">
-            <div class="project-color-dot" style="background: ${p.color || '#d97757'};"></div>
-            <span class="project-name">${escapeHtml(p.name)}</span>
-            <span class="project-count">${p.conversation_count || 0}</span>
-        </a>
-    `).join('');
-}
-
-function showCreateProjectModal() {
-    document.getElementById('createProjectModal').classList.add('active');
-    document.getElementById('projectName').focus();
-    // Reset form
-    document.getElementById('projectName').value = '';
-    document.getElementById('projectDescription').value = '';
-    document.getElementById('projectInstructions').value = '';
-    selectedProjectColor = '#d97757';
-    document.querySelectorAll('.color-option').forEach(el => {
-        el.classList.toggle('selected', el.dataset.color === '#d97757');
-    });
-}
-
-function closeCreateProjectModal(event) {
-    if (event && event.target !== event.currentTarget) return;
-    document.getElementById('createProjectModal').classList.remove('active');
-}
-
-function selectProjectColor(el) {
-    selectedProjectColor = el.dataset.color;
-    document.querySelectorAll('.color-option').forEach(option => {
-        option.classList.toggle('selected', option === el);
-    });
-}
-
-async function createProject() {
-    const name = document.getElementById('projectName').value.trim();
-    if (!name) {
-        alert('Please enter a project name');
-        return;
-    }
-
-    const btn = document.getElementById('createProjectBtn');
-    btn.disabled = true;
-    btn.textContent = 'Creating...';
-
-    try {
-        const res = await fetch('/api/projects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: name,
-                description: document.getElementById('projectDescription').value.trim(),
-                custom_instructions: document.getElementById('projectInstructions').value.trim(),
-                color: selectedProjectColor
-            })
-        });
-
-        if (res.ok) {
-            const project = await res.json();
-            closeCreateProjectModal();
-            await loadProjects();
-            // Navigate to the new project
-            window.location.href = `/project/${project.id}`;
-        } else {
-            const data = await res.json();
-            alert(data.error || 'Failed to create project');
-        }
-    } catch (e) {
-        console.error('Failed to create project:', e);
-        alert('Failed to create project');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Create project';
-    }
-}
+// toggleSidebar(), toggleLibrarySection() - now in shared.js
+// Projects functionality removed - will be rebuilt as /projects page
 
 function toggleUserMenu(event) {
     event.stopPropagation();

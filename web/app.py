@@ -1667,19 +1667,6 @@ def chat_recents():
                          sidebar_conv_ungrouped=conv_ungrouped)
 
 
-@app.route('/chat/projects')
-def chat_projects():
-    """Projects list - shows all projects."""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    user_id = UUID(session['user_id'])
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
-    return render_template('chat.html', view='projects',
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped)
-
-
 @app.route('/chat/<conversation_id>')
 def chat_conversation(conversation_id):
     """Specific conversation view."""
@@ -1699,14 +1686,23 @@ def new_chat():
     return redirect(url_for('chat'))
 
 
+@app.route('/projects')
+def projects_page():
+    """Projects list page."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('projects.html')
+
+
 @app.route('/project/<project_id>')
-def project_page(project_id):
+def project_detail(project_id):
     """Project detail page."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     user_id = UUID(session['user_id'])
 
+    # Verify project exists and belongs to user
     with DatabaseSession() as db_session:
         project = db_session.query(Project).filter(
             Project.id == UUID(project_id),
@@ -1714,13 +1710,9 @@ def project_page(project_id):
         ).first()
 
         if not project:
-            return redirect(url_for('chat'))
+            return redirect(url_for('projects_page'))
 
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
-    return render_template('project.html', project_id=project_id,
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped)
+    return render_template('project.html', project_id=project_id)
 
 
 @app.route('/ai-logs')
@@ -1996,17 +1988,19 @@ def api_list_projects():
             query = query.filter(Project.is_archived == 0)
         projects = query.order_by(Project.created_at.desc()).all()
 
-        return jsonify([{
-            'id': str(p.id),
-            'name': p.name,
-            'description': p.description,
-            'custom_instructions': p.custom_instructions,
-            'color': p.color,
-            'is_archived': p.is_archived,
-            'conversation_count': len([c for c in p.conversations if len(c.messages) > 0]),
-            'created_at': p.created_at.isoformat() if p.created_at else None,
-            'updated_at': p.updated_at.isoformat() if p.updated_at else None
-        } for p in projects])
+        return jsonify({
+            'projects': [{
+                'id': str(p.id),
+                'name': p.name,
+                'description': p.description,
+                'custom_instructions': p.custom_instructions,
+                'color': p.color,
+                'is_archived': p.is_archived,
+                'conversation_count': len([c for c in p.conversations if len(c.messages) > 0]),
+                'created_at': p.created_at.isoformat() if p.created_at else None,
+                'updated_at': p.updated_at.isoformat() if p.updated_at else None
+            } for p in projects]
+        })
 
 
 @app.route('/api/projects', methods=['POST'])
@@ -2133,11 +2127,12 @@ def api_update_project(project_id):
 
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
 def api_delete_project(project_id):
-    """API: Archive (soft delete) a project."""
+    """API: Delete a project. Use ?permanent=true for permanent deletion."""
     if 'user_id' not in session:
         return jsonify({'error': 'Not logged in'}), 401
 
     user_id = UUID(session['user_id'])
+    permanent = request.args.get('permanent', 'false').lower() == 'true'
 
     with DatabaseSession() as db_session:
         project = db_session.query(Project).filter(
@@ -2148,10 +2143,15 @@ def api_delete_project(project_id):
         if not project:
             return jsonify({'error': 'Project not found'}), 404
 
-        project.is_archived = 1
-        project.updated_at = datetime.utcnow()
-        db_session.commit()
+        if permanent:
+            # Permanent delete - conversations will have project_id set to NULL
+            db_session.delete(project)
+        else:
+            # Soft delete (archive)
+            project.is_archived = 1
+            project.updated_at = datetime.utcnow()
 
+        db_session.commit()
         return jsonify({'success': True})
 
 
