@@ -47,6 +47,8 @@ Proceed? (yes/no)
 
 **Wait for user confirmation before proceeding.**
 
+**MANDATORY:** After user confirmation, immediately explore the current codebase structure relative to CLAUDE.md guidelines using the Task tool with subagent_type=Explore.
+
 ---
 
 ## SESSION LOGGING — DO NOT BLOAT THE REPO
@@ -259,6 +261,22 @@ After ANY change:
 - [ ] Sidebar renders immediately — no jitter
 - [ ] Sidebar IDENTICAL on all pages
 - [ ] Service restarts without error
+
+---
+
+## SESSION END — REQUIRED VALIDATION
+
+At the END of every session, **MANDATORY:**
+
+Explore the current codebase structure relative to CLAUDE.md guidelines using the Task tool with subagent_type=Explore to verify:
+
+- [ ] Architecture principles are still being followed
+- [ ] No new duplication was introduced
+- [ ] All changes align with established patterns
+- [ ] Single source of truth maintained
+- [ ] Template/CSS/JS structure remains consistent
+
+Output a brief validation summary of adherence to CLAUDE.md guidelines.
 
 ---
 
