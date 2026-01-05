@@ -327,8 +327,6 @@ const Chat = {
             input: document.getElementById('chatInput'),
             inputBox: document.getElementById('chatInputBox'),
             sendBtn: document.getElementById('sendBtn'),
-            attachBtn: document.getElementById('attachBtn'),
-            attachDropdown: document.getElementById('attachDropdown'),
             modelSelectorBtn: document.getElementById('modelSelectorBtn'),
             modelDropdown: document.getElementById('modelDropdown'),
             modelName: document.querySelector('.model-name'),
@@ -341,7 +339,6 @@ const Chat = {
         this.setGreeting();
         this.bindEvents();
         this.checkExistingChat();
-        this.checkAttachAvailability();
 
         console.log('Chat initialized');
     },
@@ -381,12 +378,6 @@ const Chat = {
         this.elements.input.addEventListener('input', () => {
             this.autoResize();
             this.elements.sendBtn.disabled = !this.elements.input.value.trim();
-        });
-
-        // Attachment menu
-        this.elements.attachBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggleDropdown('attachDropdown');
         });
 
         // Model selector
@@ -597,7 +588,6 @@ const Chat = {
 
                 // Add to pending attachments
                 this.pendingAttachments.push(result.attachment);
-                this.updateAttachButton();
 
                 console.log('Attachment uploaded:', result.attachment);
             } else {
@@ -624,13 +614,6 @@ const Chat = {
         return null;
     },
 
-    checkAttachAvailability() {
-        // Ensure attach button is visible if we have an active conversation
-        const conversationId = this.getConversationId();
-        if (this.elements.attachBtn && conversationId) {
-            this.elements.attachBtn.style.display = 'flex';
-        }
-    },
 
     async captureScreenshot() {
         // Check for browser support
@@ -829,7 +812,6 @@ const Chat = {
         this.elements.input.value = '';
         this.autoResize();
         this.pendingAttachments = [];
-        this.updateAttachButton();
 
         // Add loading message
         const loadingId = this.addMessage('assistant', '', true);
