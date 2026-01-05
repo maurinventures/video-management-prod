@@ -1224,11 +1224,6 @@
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Show project submenu on hover */
-.attach-option:hover .project-submenu {
-    display: block;
-}
-
 /* Attachment display styles */
 .message-attachments {
     display: flex;

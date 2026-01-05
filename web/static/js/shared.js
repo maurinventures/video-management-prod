@@ -400,12 +400,6 @@ const Chat = {
             btn.addEventListener('click', () => this.handleAttachOption(btn.dataset.action));
         });
 
-        // Add hover functionality for project submenu
-        const projectBtn = document.querySelector('.attach-option[data-action="add-to-project"]');
-        if (projectBtn) {
-            projectBtn.addEventListener('mouseenter', () => this.loadProjects());
-        }
-
         // Close dropdowns when clicking outside
         document.addEventListener('click', () => {
             this.closeAllDropdowns();
@@ -488,7 +482,8 @@ const Chat = {
                 this.captureScreenshot();
                 break;
             case 'add-to-project':
-                // Projects show on hover, no action on click
+                // Don't close dropdowns yet - keep submenu open
+                this.showProjectSubmenu();
                 break;
             case 'research':
                 this.closeAllDropdowns();
@@ -524,16 +519,11 @@ const Chat = {
     },
 
     async uploadFile(file) {
-        // Get or create conversation ID
-        let conversationId = this.getConversationId();
-
+        // Get current conversation ID
+        const conversationId = this.getConversationId();
         if (!conversationId) {
-            // Create a new conversation for file uploads
-            conversationId = await this.createConversationForUpload();
-            if (!conversationId) {
-                showToast('Failed to create conversation for file upload', 'error');
-                return;
-            }
+            showToast('No active conversation', 'error');
+            return;
         }
 
         try {
@@ -573,38 +563,6 @@ const Chat = {
             return pathParts[2];
         }
         return null;
-    },
-
-    async createConversationForUpload() {
-        try {
-            const response = await fetch('/api/conversations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: 'New Chat'
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const conversationId = data.id;
-
-                // Update the URL and conversation ID
-                this.conversationId = conversationId;
-                history.pushState({}, '', `/chat/${conversationId}`);
-
-                // Switch to chat mode
-                this.elements.page.classList.add('has-messages');
-
-                return conversationId;
-            } else {
-                console.error('Failed to create conversation:', response.status);
-                return null;
-            }
-        } catch (error) {
-            console.error('Error creating conversation:', error);
-            return null;
-        }
     },
 
     async captureScreenshot() {
@@ -665,11 +623,11 @@ const Chat = {
             console.error('Screenshot capture error:', error);
 
             if (error.name === 'NotAllowedError') {
-                showToast('Screen capture permission denied. Please allow screen access when prompted by your browser.', 'error');
+                showToast('Screen capture permission denied', 'error');
             } else if (error.name === 'NotSupportedError') {
-                showToast('Screen capture not supported in this browser. Try Chrome, Firefox, or Safari.', 'error');
+                showToast('Screen capture not supported', 'error');
             } else {
-                showToast('Screenshot capture failed. Please try again.', 'error');
+                showToast('Screenshot capture failed', 'error');
             }
         }
     },
