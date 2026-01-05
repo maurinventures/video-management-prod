@@ -387,51 +387,97 @@
             <!-- Main input container -->
             <div class="claude-input-container">
                 <div class="claude-input-box" id="chatInputBox">
-                    <div class="claude-input-content">
-                        <div class="claude-textarea-wrapper">
-                            <div contenteditable="true"
-                                 role="textbox"
-                                 id="chatInput"
-                                 class="claude-textarea"
-                                 data-placeholder="How can I help you today?"
-                                 enterkeyhint="enter"
-                                 aria-label="Write your prompt to Claude"
-                                 aria-multiline="true"></div>
-                            <div class="claude-placeholder">How can I help you today?</div>
+                    <div class="claude-textarea-wrapper">
+                        <textarea
+                            id="chatInput"
+                            class="claude-textarea"
+                            placeholder="How can I help you today?"
+                            rows="1"
+                        ></textarea>
+                    </div>
+
+                    <div class="claude-input-controls">
+                        <div class="controls-left">
+                            <button type="button" id="attachBtn" class="claude-control-btn" title="Add content">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 3C10.2761 3 10.5 3.22386 10.5 3.5V9.5H16.5L16.6006 9.50977C16.8286 9.55629 17 9.75829 17 10C17 10.2417 16.8286 10.4437 16.6006 10.4902L16.5 10.5H10.5V16.5C10.5 16.7761 10.2761 17 10 17C9.72386 17 9.5 16.7761 9.5 16.5V10.5H3.5C3.22386 10.5 3 10.2761 3 10C3 9.72386 3.22386 9.5 3.5 9.5H9.5V3.5C9.5 3.22386 9.72386 3 10 3Z"></path>
+                                </svg>
+                            </button>
+                            <button type="button" id="thinkingBtn" class="claude-control-btn" title="Extended thinking">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10.3857 2.50977C14.3486 2.71054 17.5 5.98724 17.5 10C17.5 14.1421 14.1421 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 9.72386 2.72386 9.5 3 9.5C3.27614 9.5 3.5 9.72386 3.5 10C3.5 13.5899 6.41015 16.5 10 16.5C13.5899 16.5 16.5 13.5899 16.5 10C16.5 6.5225 13.7691 3.68312 10.335 3.50879L10 3.5L9.89941 3.49023C9.67145 3.44371 9.5 3.24171 9.5 3C9.5 2.72386 9.72386 2.5 10 2.5L10.3857 2.50977ZM10 5.5C10.2761 5.5 10.5 5.72386 10.5 6V9.69043L13.2236 11.0527C13.4706 11.1762 13.5708 11.4766 13.4473 11.7236C13.3392 11.9397 13.0957 12.0435 12.8711 11.9834L12.7764 11.9473L9.77637 10.4473C9.60698 10.3626 9.5 10.1894 9.5 10V6C9.5 5.72386 9.72386 5.5 10 5.5Z"></path>
+                                </svg>
+                            </button>
                         </div>
 
-                        <div class="claude-input-controls">
-                            <div class="controls-left">
-                                <button type="button" id="attachBtn" class="claude-control-btn" title="Toggle menu">
+                        <div class="controls-right">
+                            <!-- Model Selector -->
+                            <div class="claude-model-selector" id="modelSelector">
+                                <button type="button" class="claude-model-btn" id="modelSelectorBtn">
+                                    <span class="model-name" id="currentModelName">Haiku 4.5</span>
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M10 3C10.2761 3 10.5 3.22386 10.5 3.5V9.5H16.5L16.6006 9.50977C16.8286 9.55629 17 9.75829 17 10C17 10.2417 16.8286 10.4437 16.6006 10.4902L16.5 10.5H10.5V16.5C10.5 16.7761 10.2761 17 10 17C9.72386 17 9.5 16.7761 9.5 16.5V10.5H3.5C3.22386 10.5 3 10.2761 3 10C3 9.72386 3.22386 9.5 3.5 9.5H9.5V3.5C9.5 3.22386 9.72386 3 10 3Z"></path>
+                                        <path d="M14.128 7.16482C14.3126 6.95983 14.6298 6.94336 14.835 7.12771C15.0402 7.31242 15.0567 7.62952 14.8721 7.83477L10.372 12.835L10.2939 12.9053C10.2093 12.9667 10.1063 13 9.99995 13C9.85833 12.9999 9.72264 12.9402 9.62788 12.835L5.12778 7.83477L5.0682 7.75273C4.95072 7.55225 4.98544 7.28926 5.16489 7.12771C5.34445 6.96617 5.60969 6.95939 5.79674 7.09744L5.87193 7.16482L9.99995 11.7519L14.128 7.16482Z"></path>
                                     </svg>
                                 </button>
-                                <button type="button" id="thinkingBtn" class="claude-control-btn" title="Extended thinking">
-                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M10.3857 2.50977C14.3486 2.71054 17.5 5.98724 17.5 10C17.5 14.1421 14.1421 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 9.72386 2.72386 9.5 3 9.5C3.27614 9.5 3.5 9.72386 3.5 10C3.5 13.5899 6.41015 16.5 10 16.5C13.5899 16.5 16.5 13.5899 16.5 10C16.5 6.5225 13.7691 3.68312 10.335 3.50879L10 3.5L9.89941 3.49023C9.67145 3.44371 9.5 3.24171 9.5 3C9.5 2.72386 9.72386 2.5 10 2.5L10.3857 2.50977ZM10 5.5C10.2761 5.5 10.5 5.72386 10.5 6V9.69043L13.2236 11.0527C13.4706 11.1762 13.5708 11.4766 13.4473 11.7236C13.3392 11.9397 13.0957 12.0435 12.8711 11.9834L12.7764 11.9473L9.77637 10.4473C9.60698 10.3626 9.5 10.1894 9.5 10V6C9.5 5.72386 9.72386 5.5 10 5.5Z"></path>
-                                    </svg>
-                                </button>
-                            </div>
 
-                            <div class="controls-right">
-                                <!-- Model Selector -->
-                                <div class="claude-model-selector">
-                                    <button type="button" class="claude-model-btn" id="modelSelectorBtn">
-                                        <span class="model-name">Haiku 4.5</span>
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M14.128 7.16482C14.3126 6.95983 14.6298 6.94336 14.835 7.12771C15.0402 7.31242 15.0567 7.62952 14.8721 7.83477L10.372 12.835L10.2939 12.9053C10.2093 12.9667 10.1063 13 9.99995 13C9.85833 12.9999 9.72264 12.9402 9.62788 12.835L5.12778 7.83477L5.0682 7.75273C4.95072 7.55225 4.98544 7.28926 5.16489 7.12771C5.34445 6.96617 5.60969 6.95939 5.79674 7.09744L5.87193 7.16482L9.99995 11.7519L14.128 7.16482Z"></path>
+                                <!-- Model Dropdown -->
+                                <div class="claude-model-dropdown" id="modelDropdown">
+                                    <div class="claude-model-option" data-model="opus-4.5">
+                                        <div class="model-info">
+                                            <span class="model-option-name">Opus 4.5</span>
+                                            <span class="model-option-desc">Most capable for complex work</span>
+                                        </div>
+                                    </div>
+                                    <div class="claude-model-option" data-model="sonnet-4.5">
+                                        <div class="model-info">
+                                            <span class="model-option-name">Sonnet 4.5</span>
+                                            <span class="model-option-desc">Best for everyday tasks</span>
+                                        </div>
+                                    </div>
+                                    <div class="claude-model-option selected" data-model="haiku-4.5">
+                                        <div class="model-info">
+                                            <span class="model-option-name">Haiku 4.5</span>
+                                            <span class="model-option-desc">Fastest for quick answers</span>
+                                        </div>
+                                        <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
                                         </svg>
-                                    </button>
-                                </div>
+                                    </div>
+                                    <div class="dropdown-divider"></div>
+                                    <div class="claude-model-option more-models" id="moreModelsBtn">
+                                        <span>More models</span>
+                                        <svg class="submenu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </div>
 
-                                <!-- Send Button -->
-                                <button type="button" id="sendBtn" class="claude-send-btn" disabled>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
-                                        <path d="M208.49,120.49a12,12,0,0,1-17,0L140,69V216a12,12,0,0,1-24,0V69L64.49,120.49a12,12,0,0,1-17-17l72-72a12,12,0,0,1,17,0l72,72A12,12,0,0,1,208.49,120.49Z"></path>
-                                    </svg>
-                                </button>
+                                    <!-- More Models Submenu -->
+                                    <div class="claude-more-models-submenu" id="moreModelsSubmenu">
+                                        <div class="claude-model-option" data-model="opus-4.1">
+                                            <span class="model-option-name">Opus 4.1</span>
+                                        </div>
+                                        <div class="claude-model-option" data-model="opus-4">
+                                            <span class="model-option-name">Opus 4</span>
+                                        </div>
+                                        <div class="claude-model-option" data-model="sonnet-4">
+                                            <span class="model-option-name">Sonnet 4</span>
+                                        </div>
+                                        <div class="claude-model-option" data-model="opus-3">
+                                            <span class="model-option-name">Opus 3</span>
+                                        </div>
+                                        <div class="claude-model-option" data-model="haiku-3.5">
+                                            <span class="model-option-name">Haiku 3.5</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+
+                            <!-- Send Button -->
+                            <button type="button" id="sendBtn" class="claude-send-btn" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                    <path d="M208.49,120.49a12,12,0,0,1-17,0L140,69V216a12,12,0,0,1-24,0V69L64.49,120.49a12,12,0,0,1-17-17l72-72a12,12,0,0,1,17,0l72,72A12,12,0,0,1,208.49,120.49Z"></path>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -916,5 +962,179 @@ if (typeof Chat !== 'undefined') {
 }
 
 // showToast() function available via shared.js
+
+// ==========================================
+// CHAT INPUT FUNCTIONALITY
+// ==========================================
+
+let currentModel = 'haiku-4.5';
+let isThinkingEnabled = false;
+
+// Initialize chat input functionality
+function initializeChatInput() {
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const attachBtn = document.getElementById('attachBtn');
+    const thinkingBtn = document.getElementById('thinkingBtn');
+    const modelSelectorBtn = document.getElementById('modelSelectorBtn');
+    const modelDropdown = document.getElementById('modelDropdown');
+    const moreModelsBtn = document.getElementById('moreModelsBtn');
+    const moreModelsSubmenu = document.getElementById('moreModelsSubmenu');
+
+    if (!chatInput || !sendBtn) return;
+
+    // Auto-resize textarea
+    function autoResize() {
+        chatInput.style.height = '4rem';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 192) + 'px'; // max 12rem
+    }
+
+    // Update send button state
+    function updateSendButton() {
+        const hasText = chatInput.value.trim().length > 0;
+        sendBtn.disabled = !hasText;
+    }
+
+    // Textarea input handling
+    chatInput.addEventListener('input', function() {
+        autoResize();
+        updateSendButton();
+    });
+
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendBtn.disabled) {
+                sendMessage();
+            }
+        }
+    });
+
+    // Send button functionality
+    sendBtn.addEventListener('click', sendMessage);
+
+    // Attach button functionality
+    if (attachBtn) {
+        attachBtn.addEventListener('click', function() {
+            showToast('Attach functionality coming soon', 'info');
+        });
+    }
+
+    // Thinking button functionality
+    if (thinkingBtn) {
+        thinkingBtn.addEventListener('click', function() {
+            isThinkingEnabled = !isThinkingEnabled;
+            thinkingBtn.style.background = isThinkingEnabled ? '#f3f4f6' : 'transparent';
+            showToast(isThinkingEnabled ? 'Extended thinking enabled' : 'Extended thinking disabled', 'info');
+        });
+    }
+
+    // Model selector functionality
+    if (modelSelectorBtn && modelDropdown) {
+        modelSelectorBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = modelDropdown.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) {
+                modelDropdown.classList.add('open');
+            }
+        });
+
+        // Model selection
+        modelDropdown.addEventListener('click', function(e) {
+            const option = e.target.closest('.claude-model-option');
+            if (option && option.dataset.model && !option.classList.contains('more-models')) {
+                selectModel(option.dataset.model, option.querySelector('.model-option-name').textContent);
+                closeAllDropdowns();
+            }
+        });
+
+        // More models submenu
+        if (moreModelsBtn && moreModelsSubmenu) {
+            moreModelsBtn.addEventListener('mouseenter', function() {
+                moreModelsSubmenu.classList.add('open');
+            });
+
+            moreModelsBtn.addEventListener('mouseleave', function() {
+                setTimeout(() => {
+                    if (!moreModelsSubmenu.matches(':hover')) {
+                        moreModelsSubmenu.classList.remove('open');
+                    }
+                }, 100);
+            });
+
+            moreModelsSubmenu.addEventListener('mouseleave', function() {
+                moreModelsSubmenu.classList.remove('open');
+            });
+
+            moreModelsSubmenu.addEventListener('click', function(e) {
+                const option = e.target.closest('.claude-model-option');
+                if (option && option.dataset.model) {
+                    selectModel(option.dataset.model, option.querySelector('.model-option-name').textContent);
+                    closeAllDropdowns();
+                }
+            });
+        }
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', closeAllDropdowns);
+
+    // Initialize send button state
+    updateSendButton();
+}
+
+function closeAllDropdowns() {
+    const modelDropdown = document.getElementById('modelDropdown');
+    const moreModelsSubmenu = document.getElementById('moreModelsSubmenu');
+
+    if (modelDropdown) modelDropdown.classList.remove('open');
+    if (moreModelsSubmenu) moreModelsSubmenu.classList.remove('open');
+}
+
+function selectModel(modelId, modelName) {
+    currentModel = modelId;
+    const currentModelName = document.getElementById('currentModelName');
+    if (currentModelName) {
+        currentModelName.textContent = modelName;
+    }
+
+    // Update selected state
+    const allOptions = document.querySelectorAll('.claude-model-option[data-model]');
+    allOptions.forEach(option => {
+        option.classList.remove('selected');
+        const check = option.querySelector('.model-check');
+        if (check) check.style.opacity = '0';
+    });
+
+    const selectedOption = document.querySelector(`[data-model="${modelId}"]`);
+    if (selectedOption) {
+        selectedOption.classList.add('selected');
+        const check = selectedOption.querySelector('.model-check');
+        if (check) check.style.opacity = '1';
+    }
+
+    showToast(`Switched to ${modelName}`, 'success');
+}
+
+function sendMessage() {
+    const chatInput = document.getElementById('chatInput');
+    const message = chatInput.value.trim();
+
+    if (!message) return;
+
+    showToast(`Sending message with ${currentModel}...`, 'info');
+
+    // Here you would integrate with your existing chat functionality
+    // For now, just clear the input
+    chatInput.value = '';
+    chatInput.style.height = '4rem';
+
+    const sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) sendBtn.disabled = true;
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeChatInput);
 </script>
 {% endblock %}

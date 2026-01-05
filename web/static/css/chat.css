@@ -136,7 +136,6 @@
 .claude-input-box {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
     background: #ffffff;
     margin: 0 0.5rem;
     border-radius: 1rem;
@@ -146,6 +145,7 @@
     transition: all 200ms ease;
     position: relative;
     z-index: 10;
+    min-height: 6rem;
 }
 
 @media (min-width: 768px) {
@@ -162,25 +162,10 @@
     box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.075), 0 0 0 0.5px rgba(0, 0, 0, 0.03);
 }
 
-.claude-input-content {
-    display: flex;
-    flex-direction: column;
-    margin: 0.875rem;
-    gap: 0.75rem;
-}
-
 .claude-textarea-wrapper {
     position: relative;
-    max-height: 24rem;
     width: 100%;
-    overflow-y: auto;
-    font-size: 1rem;
-    line-height: 1.5;
-    word-break: break-words;
-    transition: opacity 200ms ease;
-    min-height: 3rem;
-    padding-left: 0.375rem;
-    padding-top: 0.375rem;
+    flex: 1;
 }
 
 .claude-textarea {
@@ -191,26 +176,23 @@
     background: transparent;
     color: #1a1a1a;
     border: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    padding: 1rem 0.5rem 0.5rem;
+    min-height: 4rem;
+    max-height: 12rem;
+    overflow-y: auto;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.claude-textarea::placeholder {
+    color: #9ca3af;
     font-family: inherit;
     font-size: inherit;
-    line-height: inherit;
-    overflow: hidden;
-    min-height: 1.5rem;
-}
-
-.claude-placeholder {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    padding-left: 0.375rem;
-    padding-top: 0.3125rem;
-    color: #9ca3af;
-    transition: opacity 150ms ease;
-}
-
-.claude-textarea:not(:empty) + .claude-placeholder {
-    opacity: 0;
+    font-weight: inherit;
 }
 
 /* Claude Input Controls */
@@ -326,6 +308,121 @@
     font-size: 0.875rem;
     font-weight: 500;
     white-space: nowrap;
+}
+
+/* Claude Model Dropdown */
+.claude-model-dropdown {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 0.5rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    min-width: 20rem;
+    padding: 0.5rem;
+    display: none;
+    z-index: 1000;
+}
+
+.claude-model-dropdown.open {
+    display: block;
+}
+
+.claude-model-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 200ms ease;
+    position: relative;
+}
+
+.claude-model-option:hover {
+    background: #f3f4f6;
+}
+
+.claude-model-option.selected {
+    background: #f0f9ff;
+}
+
+.model-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+}
+
+.model-option-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.model-option-desc {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.model-check {
+    color: #3b82f6;
+    opacity: 0;
+}
+
+.claude-model-option.selected .model-check {
+    opacity: 1;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 0.5rem 0;
+}
+
+.more-models {
+    color: #6b7280 !important;
+}
+
+.submenu-arrow {
+    color: #9ca3af;
+    opacity: 0.7;
+}
+
+/* More Models Submenu */
+.claude-more-models-submenu {
+    position: absolute;
+    top: 0;
+    right: 100%;
+    margin-right: 0.5rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    min-width: 12rem;
+    padding: 0.5rem;
+    display: none;
+    z-index: 1001;
+}
+
+.claude-more-models-submenu.open {
+    display: block;
+}
+
+.claude-more-models-submenu .claude-model-option {
+    padding: 0.5rem 1rem;
+}
+
+.claude-more-models-submenu .model-option-name {
+    font-size: 0.875rem;
 }
 
 /* Claude Send Button */
