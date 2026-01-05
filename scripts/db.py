@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     Column,
     Date,
     DateTime,
@@ -261,6 +262,7 @@ class Conversation(Base):
     title = Column(String(255), nullable=False, default="New Chat")
     video_id = Column(UUID(as_uuid=True), ForeignKey("videos.id", ondelete="SET NULL"), nullable=True)
     is_collaborative = Column(Integer, default=0)  # 1 if shared with team
+    starred = Column(Boolean, default=False)  # Whether chat is starred by user
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

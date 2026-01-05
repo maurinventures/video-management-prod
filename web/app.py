@@ -1813,7 +1813,8 @@ def chat_recents():
             'id': str(c.id),
             'title': c.title,
             'updated_at': c.updated_at.isoformat(),
-            'message_count': len(c.messages)
+            'message_count': len(c.messages),
+            'starred': c.starred if hasattr(c, 'starred') else False
         } for c in conversations]
 
     return render_with_sidebar('chat_new.html', 'chats', view='recents', conversations=conversations_data)
@@ -2808,6 +2809,34 @@ def api_update_conversation(conversation_id):
         db_session.commit()
 
         return jsonify({'success': True})
+
+
+@app.route('/api/conversations/<conversation_id>/star', methods=['PUT'])
+def api_star_conversation(conversation_id):
+    """Star or unstar a conversation."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.json or {}
+    starred = data.get('starred', True)  # Default to starring if not specified
+
+    with DatabaseSession() as db_session:
+        conversation = db_session.query(Conversation).filter(
+            Conversation.id == UUID(conversation_id),
+            Conversation.user_id == UUID(session['user_id'])
+        ).first()
+
+        if not conversation:
+            return jsonify({'error': 'Conversation not found'}), 404
+
+        conversation.starred = starred
+        db_session.commit()
+
+        return jsonify({
+            'success': True,
+            'starred': starred,
+            'message': 'Starred' if starred else 'Unstarred'
+        })
 
 
 @app.route('/api/conversations/<conversation_id>/generate-title', methods=['POST'])

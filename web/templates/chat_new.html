@@ -594,7 +594,9 @@ function renderChatsList() {
                    ${selectedChats.has(conv.id) ? 'checked' : ''}
                    onclick="event.stopPropagation(); toggleChatSelection('${conv.id}')">
             <div class="chat-list-content">
-                <div class="chat-list-title">${escapeHtml(conv.title)}</div>
+                <div class="chat-list-title">
+                    ${conv.starred ? '<span class="chat-star-icon">★</span>' : ''}${escapeHtml(conv.title)}
+                </div>
                 <div class="chat-list-meta">Last message ${timeAgo(conv.updated_at)}</div>
             </div>
             <div class="chat-list-actions">
@@ -704,6 +706,16 @@ function openChatMenu(event, chatId, chatTitle, fromHeader = false) {
     window.menuChatId = chatId;
     window.menuChatTitle = chatTitle;
 
+    // Update star button based on current state
+    const conv = conversations.find(c => c.id === chatId);
+    const isStarred = conv ? conv.starred : false;
+    const starIcon = document.getElementById('starIcon');
+    const starText = document.getElementById('starText');
+    if (starIcon && starText) {
+        starIcon.textContent = isStarred ? '★' : '☆';
+        starText.textContent = isStarred ? 'Unstar' : 'Star';
+    }
+
     // Position the menu
     const rect = event.currentTarget.getBoundingClientRect();
 
@@ -743,7 +755,32 @@ function chatMenuAction(action) {
 
     switch (action) {
         case 'star':
-            showToast('Starring coming soon', 'info');
+            // Find the conversation to get current starred state
+            const conv = conversations.find(c => c.id === window.menuChatId);
+            const currentStarred = conv ? conv.starred : false;
+            const newStarred = !currentStarred;
+
+            fetch(`/api/conversations/${window.menuChatId}/star`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ starred: newStarred })
+            })
+            .then(r => {
+                if (r.ok) {
+                    // Update the conversation in the array
+                    if (conv) {
+                        conv.starred = newStarred;
+                    }
+
+                    // Re-render the list to reflect changes
+                    renderChatsList();
+
+                    showToast(newStarred ? 'Chat starred' : 'Chat unstarred', 'success');
+                } else {
+                    showToast('Failed to update star', 'error');
+                }
+            })
+            .catch(() => showToast('Failed to update star', 'error'));
             break;
 
         case 'rename':
