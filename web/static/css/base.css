@@ -39,16 +39,10 @@ body {
     overflow-y: auto;
     position: relative;
     height: 100vh;
+    padding: 2rem;
 }
 
-/* Anti-jitter script styles */
-.sidebar-section-toggle {
-    transition: transform 0.2s;
-}
-
-.recents-project-chevron {
-    transition: transform 0.2s;
-}
+/* Anti-jitter script styles - Moved to sidebar.css for single source of truth */
 
 /* Floating toggle when sidebar collapsed */
 .sidebar-toggle-floating {
@@ -86,10 +80,7 @@ body {
 
 /* Claude.ai-style typography and spacing enhancements */
 
-/* Generous spacing for content areas */
-.main-content {
-    padding: 2rem;
-}
+/* Generous spacing for content areas - Applied via existing .main-content rule */
 
 /* Enhanced spacing for text content */
 h1, h2, h3, h4, h5, h6 {
@@ -324,14 +315,4 @@ a:hover {
     color: var(--color-text) !important;
 }
 
-/* New chat icon keeps orange background */
-.new-chat-icon {
-    background: var(--color-accent) !important;
-}
-
-/* New chat plus icon inside circle */
-.new-chat-icon svg {
-    color: white !important;
-    width: 10px !important;
-    height: 10px !important;
-}
+/* New chat icon styling moved to sidebar.css for single source of truth */
