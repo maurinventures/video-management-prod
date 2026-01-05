@@ -167,3 +167,41 @@ a {
 a:hover {
     border-bottom-color: var(--color-accent);
 }
+
+/* Sidebar typography hierarchy */
+
+/* Claude logo/brand (28px, 1.2 line-height, 600 weight) */
+.sidebar-logo {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 28px !important;
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+}
+
+/* Navigation items - main nav and new chat button (16px, 1.5 line-height, 400 weight) */
+.sidebar-nav-item,
+.new-chat-btn,
+.sidebar-section-header {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    font-weight: 400 !important;
+}
+
+/* Recents section label (12px, 1.4 line-height, 500 weight) */
+.sidebar-section-title {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    font-weight: 500 !important;
+}
+
+/* Chat history items (14px, 1.6 line-height, 400 weight) */
+.conversation-item,
+.conversation-title,
+.recents-project-name {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    font-weight: 400 !important;
+}
