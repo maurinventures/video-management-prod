@@ -11,8 +11,40 @@
 }
 
 .sidebar.collapsed {
-    width: 0;
-    transform: translateX(-260px);
+    width: 60px;
+    transform: translateX(0);
+}
+
+/* Center all content when sidebar is collapsed */
+.sidebar.collapsed .new-chat-btn,
+.sidebar.collapsed .sidebar-nav-item,
+.sidebar.collapsed .sidebar-section-header,
+.sidebar.collapsed .sidebar-section-items .sidebar-nav-item,
+.sidebar.collapsed .user-info {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Hide text when collapsed, show only icons */
+.sidebar.collapsed .nav-item-text,
+.sidebar.collapsed .user-name,
+.sidebar.collapsed .sidebar-section-header-left span,
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .sidebar-section-toggle,
+.sidebar.collapsed .sidebar-section-items,
+.sidebar.collapsed .conversations-list,
+.sidebar.collapsed .sidebar-divider,
+.sidebar.collapsed .sidebar-section,
+.sidebar.collapsed .user-menu-btn {
+    display: none;
+}
+
+/* Keep icons centered and visible */
+.sidebar.collapsed .nav-item-icon,
+.sidebar.collapsed .sidebar-section-header-left svg,
+.sidebar.collapsed .user-avatar {
+    margin: 0 auto;
 }
 
 /* Sidebar header */
@@ -284,6 +316,7 @@
 .w-5 { width: 20px; }
 .h-9 { height: 36px; }
 .w-9 { width: 36px; }
+.text-\\[10px\\] { font-size: 10px; }
 .text-\\[12px\\] { font-size: 12px; }
 .text-\\[16px\\] { font-size: 16px; }
 .border-0\\.5 { border-width: 0.5px; }
