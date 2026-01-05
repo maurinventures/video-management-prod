@@ -3575,6 +3575,10 @@ let conversations = [];
 let isSelectMode = false;
 let selectedChats = new Set();
 
+// Chat menu state (defined early to avoid TDZ issues)
+let menuChatId = null;
+let menuChatTitle = null;
+
 // Initialize based on route
 document.addEventListener('DOMContentLoaded', async () => {
     // Sidebar data is now server-rendered by Jinja - no initial JS load needed
@@ -5931,9 +5935,6 @@ document.addEventListener('click', function(e) {
 // ============================================================================
 // CHAT MENU FUNCTIONS
 // ============================================================================
-
-let menuChatId = null;
-let menuChatTitle = null;
 
 function openChatMenu(event, chatId, chatTitle, fromHeader = false) {
     event.preventDefault();

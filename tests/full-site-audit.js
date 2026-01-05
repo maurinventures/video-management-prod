@@ -228,6 +228,15 @@ async function testSidebarHoverMenus() {
     await PAGE.goto(`${BASE_URL}/chat`);
     await PAGE.waitForLoadState('networkidle');
 
+    // Wait for scripts to fully initialize
+    await PAGE.waitForTimeout(1000);
+
+    // Verify menuChatId is initialized
+    const menuReady = await PAGE.evaluate(() => {
+        return typeof menuChatId !== 'undefined' && typeof openChatMenu === 'function';
+    });
+    console.log(`  DEBUG: Menu system ready: ${menuReady}`);
+
     // Find chat items in RECENTS
     const recentsItems = await PAGE.$$('.conversation-item');
 
