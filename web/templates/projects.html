@@ -172,7 +172,37 @@
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section"><div class="sidebar-section-title">Recents</div></div>
-    <div class="conversations-list" id="conversationsList"></div>
+    <div class="conversations-list" id="conversationsList">
+        {% for group in sidebar_conv_groups %}
+        <div class="recents-project-group">
+            <div class="recents-project-header expanded" onclick="toggleRecentsProject('{{ group.project.id }}')">
+                <span class="recents-project-dot" style="background: {{ group.project.color }}"></span>
+                <span class="recents-project-name">{{ group.project.name }}</span>
+                <svg class="recents-project-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="recents-project-items expanded" id="recents-project-{{ group.project.id }}">
+                {% for conv in group.conversations %}
+                <div class="conversation-item nested"
+                     onclick="loadConversation('{{ conv.id }}')"
+                     data-id="{{ conv.id }}"
+                     data-title="{{ conv.title }}">
+                    <div class="conversation-title">{{ conv.title }}</div>
+                    <button class="chat-item-menu" onclick="event.stopPropagation(); openChatMenu(event, '{{ conv.id }}', '{{ conv.title|e }}')">•••</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% for conv in sidebar_conv_ungrouped %}
+        <div class="conversation-item"
+             onclick="loadConversation('{{ conv.id }}')"
+             data-id="{{ conv.id }}"
+             data-title="{{ conv.title }}">
+            <div class="conversation-title">{{ conv.title }}</div>
+            <button class="chat-item-menu" onclick="event.stopPropagation(); openChatMenu(event, '{{ conv.id }}', '{{ conv.title|e }}')">•••</button>
+        </div>
+        {% endfor %}
+    </div>
 
     <div class="sidebar-footer">
         <div class="user-info">

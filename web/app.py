@@ -1706,7 +1706,12 @@ def projects_page():
     """Projects list page."""
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('projects.html')
+    user_id = UUID(session['user_id'])
+    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
+    return render_template('projects.html',
+                         sidebar_projects=sidebar_projects,
+                         sidebar_conv_groups=conv_groups,
+                         sidebar_conv_ungrouped=conv_ungrouped)
 
 
 @app.route('/project/<project_id>')
