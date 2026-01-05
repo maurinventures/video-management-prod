@@ -1,0 +1,480 @@
+{% extends 'base_new.html' %}
+
+{% block title %}Projects - MV Internal{% endblock %}
+
+{% block head %}
+<style>
+/* Projects-specific styles that aren't shared */
+
+/* Main content */
+.main-content {
+    padding: 2rem;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* Projects grid */
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.project-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.project-card:hover {
+    border-color: var(--color-border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.project-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.project-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.project-card-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-card-desc {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    min-height: 2.4em;
+}
+
+.project-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+}
+
+.project-card-meta svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Create project card */
+.create-project-card {
+    background: var(--color-bg-secondary);
+    border: 2px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+.create-project-card:hover {
+    border-color: var(--color-accent);
+    background: #fef8f6;
+}
+
+.create-project-card svg {
+    width: 32px;
+    height: 32px;
+    color: var(--color-accent);
+    margin-bottom: 0.5rem;
+}
+
+.create-project-card span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    color: #ccc;
+    margin-bottom: 1rem;
+}
+
+.empty-state h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: all 0.15s;
+}
+
+.modal-close:hover {
+    background: var(--color-hover);
+    color: var(--color-text);
+}
+
+.modal-close svg {
+    width: 20px;
+    height: 20px;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+textarea.form-input {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.color-picker {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.color-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+}
+
+.color-option.selected {
+    border-color: var(--color-text);
+}
+
+.btn {
+    padding: 0.625rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    border: none;
+}
+
+.btn-primary {
+    background: var(--color-accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #c56647;
+}
+
+.btn-secondary {
+    background: var(--color-hover);
+    color: var(--color-text);
+}
+
+.btn-secondary:hover {
+    background: var(--color-border);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Projects</h1>
+</div>
+
+<div class="projects-grid" id="projectsGrid">
+    <!-- Projects loaded via JavaScript -->
+</div>
+
+<!-- Create Project Modal -->
+<div class="modal-overlay" id="createModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Create project</h2>
+            <button class="modal-close" onclick="closeModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="projectName" placeholder="Project name" autofocus>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description (optional)</label>
+                <textarea class="form-input" id="projectDesc" placeholder="What is this project about?"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Color</label>
+                <div class="color-picker" id="colorPicker">
+                    <div class="color-option selected" style="background: #d97757" data-color="#d97757"></div>
+                    <div class="color-option" style="background: #e5a336" data-color="#e5a336"></div>
+                    <div class="color-option" style="background: #7cb342" data-color="#7cb342"></div>
+                    <div class="color-option" style="background: #26a69a" data-color="#26a69a"></div>
+                    <div class="color-option" style="background: #42a5f5" data-color="#42a5f5"></div>
+                    <div class="color-option" style="background: #5c6bc0" data-color="#5c6bc0"></div>
+                    <div class="color-option" style="background: #ab47bc" data-color="#ab47bc"></div>
+                    <div class="color-option" style="background: #ec407a" data-color="#ec407a"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="createProject()">Create project</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let projects = [];
+let selectedColor = '#d97757';
+
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        if (response.ok) {
+            const data = await response.json();
+            projects = data.projects || [];
+            renderProjects();
+        }
+    } catch (error) {
+        console.error('Failed to load projects:', error);
+    }
+}
+
+function renderProjects() {
+    const grid = document.getElementById('projectsGrid');
+
+    let html = `
+        <div class="create-project-card" onclick="openModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Create project</span>
+        </div>
+    `;
+
+    projects.forEach(project => {
+        html += `
+            <a href="/project/${project.id}" class="project-card">
+                <div class="project-card-header">
+                    <div class="project-color" style="background: ${project.color || '#d97757'}"></div>
+                    <div class="project-card-name">${escapeHtml(project.name)}</div>
+                </div>
+                <div class="project-card-desc">${escapeHtml(project.description) || 'No description'}</div>
+                <div class="project-card-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    ${project.conversation_count || 0} chat${project.conversation_count !== 1 ? 's' : ''}
+                </div>
+            </a>
+        `;
+    });
+
+    grid.innerHTML = html;
+}
+
+function openModal() {
+    document.getElementById('createModal').classList.add('active');
+    document.getElementById('projectName').focus();
+}
+
+function closeModal() {
+    document.getElementById('createModal').classList.remove('active');
+    document.getElementById('projectName').value = '';
+    document.getElementById('projectDesc').value = '';
+    selectedColor = '#d97757';
+    document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+    document.querySelector('.color-option[data-color="#d97757"]').classList.add('selected');
+}
+
+document.getElementById('colorPicker').addEventListener('click', function(e) {
+    const option = e.target.closest('.color-option');
+    if (option) {
+        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+        option.classList.add('selected');
+        selectedColor = option.dataset.color;
+    }
+});
+
+async function createProject() {
+    const name = document.getElementById('projectName').value.trim();
+    const description = document.getElementById('projectDesc').value.trim();
+
+    if (!name) {
+        document.getElementById('projectName').focus();
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description, color: selectedColor })
+        });
+
+        if (response.ok) {
+            const project = await response.json();
+            window.location.href = `/project/${project.id}`;
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Failed to create project');
+        }
+    } catch (error) {
+        console.error('Failed to create project:', error);
+        alert('Failed to create project');
+    }
+}
+
+// Handle Enter key in modal
+document.getElementById('projectName').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') createProject();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    // Sidebar conversations are server-rendered - no need to fetch/render via JS
+});
+</script>
+{% endblock %}

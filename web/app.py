@@ -1846,14 +1846,7 @@ def new_chat():
 @app.route('/projects')
 def projects_page():
     """Projects list page."""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    user_id = UUID(session['user_id'])
-    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
-    return render_template('projects.html',
-                         sidebar_projects=sidebar_projects,
-                         sidebar_conv_groups=conv_groups,
-                         sidebar_conv_ungrouped=conv_ungrouped)
+    return render_with_sidebar('projects_new.html', 'projects')
 
 
 @app.route('/project/<project_id>')
