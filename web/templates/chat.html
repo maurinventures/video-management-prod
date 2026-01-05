@@ -342,32 +342,136 @@
         display: none;
     }
 
-    .conversation-actions {
-        display: none;
-        gap: 0.25rem;
-    }
-
-    .conversation-item:hover .conversation-actions {
-        display: flex;
-    }
-
-    .conv-action-btn {
-        padding: 0.25rem;
-        background: none;
-        border: none;
-        color: #666;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-
-    .conv-action-btn:hover {
+    /* Chat item menu button (•••) */
+    .chat-item-menu {
+        opacity: 0;
         background: #e5e4df;
+        border: none;
+        border-radius: 6px;
+        color: #666;
+        padding: 2px 6px;
+        cursor: pointer;
+        font-size: 12px;
+        letter-spacing: 1px;
+        transition: opacity 0.15s, background 0.15s;
+        flex-shrink: 0;
+    }
+
+    .conversation-item:hover .chat-item-menu {
+        opacity: 1;
+    }
+
+    .chat-item-menu:hover {
+        background: #d5d4cf;
         color: #1a1a1a;
     }
 
-    .conv-action-btn svg {
-        width: 14px;
-        height: 14px;
+    /* Shared chat menu dropdown */
+    .chat-menu-dropdown {
+        display: none;
+        position: fixed;
+        background: white;
+        border: 1px solid #e5e4df;
+        border-radius: 12px;
+        padding: 6px 0;
+        min-width: 200px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        z-index: 10000;
+    }
+
+    .chat-menu-dropdown.open {
+        display: block;
+    }
+
+    .chat-menu-dropdown button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        color: #1a1a1a;
+        font-size: 14px;
+        font-family: inherit;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .chat-menu-dropdown button:hover {
+        background: #f5f4ef;
+    }
+
+    .chat-menu-dropdown .menu-delete {
+        color: #dc2626;
+    }
+
+    .chat-menu-dropdown .menu-delete:hover {
+        background: #fef2f2;
+    }
+
+    .menu-icon {
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    /* Chat top bar with title and share */
+    .chat-top-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e4df;
+    }
+
+    .chat-top-bar.visible {
+        display: flex;
+    }
+
+    .chat-title-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f5f4ef;
+        border: none;
+        color: #1a1a1a;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        max-width: 300px;
+    }
+
+    .chat-title-btn:hover {
+        background: #e5e4df;
+    }
+
+    .chat-title-btn span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .chat-title-btn svg {
+        flex-shrink: 0;
+    }
+
+    .share-btn {
+        background: #d97757;
+        border: none;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .share-btn:hover {
+        background: #c66a4a;
     }
 
     /* Recents project groups */
@@ -3091,8 +3195,10 @@
                 {% for conv in group.conversations %}
                 <div class="conversation-item nested{% if conv.id == conversation_id %} active{% endif %}"
                      onclick="loadConversation('{{ conv.id }}')"
-                     data-id="{{ conv.id }}">
+                     data-id="{{ conv.id }}"
+                     data-title="{{ conv.title }}">
                     <div class="conversation-title">{{ conv.title }}</div>
+                    <button class="chat-item-menu" onclick="event.stopPropagation(); openChatMenu(event, '{{ conv.id }}', '{{ conv.title|e }}')">•••</button>
                 </div>
                 {% endfor %}
             </div>
@@ -3101,10 +3207,32 @@
         {% for conv in sidebar_conv_ungrouped %}
         <div class="conversation-item{% if conv.id == conversation_id %} active{% endif %}"
              onclick="loadConversation('{{ conv.id }}')"
-             data-id="{{ conv.id }}">
+             data-id="{{ conv.id }}"
+             data-title="{{ conv.title }}">
             <div class="conversation-title">{{ conv.title }}</div>
+            <button class="chat-item-menu" onclick="event.stopPropagation(); openChatMenu(event, '{{ conv.id }}', '{{ conv.title|e }}')">•••</button>
         </div>
         {% endfor %}
+    </div>
+
+    <!-- Shared chat menu dropdown -->
+    <div id="chatMenu" class="chat-menu-dropdown">
+        <button onclick="chatMenuAction('star')">
+            <span class="menu-icon">☆</span>
+            <span>Star</span>
+        </button>
+        <button onclick="chatMenuAction('rename')">
+            <span class="menu-icon">✎</span>
+            <span>Rename</span>
+        </button>
+        <button onclick="chatMenuAction('addToProject')">
+            <span class="menu-icon">📁</span>
+            <span>Add to project</span>
+        </button>
+        <button onclick="chatMenuAction('delete')" class="menu-delete">
+            <span class="menu-icon">🗑</span>
+            <span>Delete</span>
+        </button>
     </div>
 
     <div class="sidebar-footer" style="position: relative;">
@@ -3172,12 +3300,23 @@
         </svg>
     </button>
 
-    <!-- Chat header with project badge -->
-    <div class="chat-header">
-        <a href="#" class="chat-header-project" id="chatHeaderProject" onclick="goToProject(event)">
-            <span class="chat-header-project-dot" id="chatHeaderProjectDot"></span>
-            <span id="chatHeaderProjectName">Project</span>
-        </a>
+    <!-- Chat top bar with title dropdown and share button -->
+    <div class="chat-top-bar" id="chatTopBar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <!-- Project badge (shown when chat is in a project) -->
+            <a href="#" class="chat-header-project" id="chatHeaderProject" onclick="goToProject(event)">
+                <span class="chat-header-project-dot" id="chatHeaderProjectDot"></span>
+                <span id="chatHeaderProjectName">Project</span>
+            </a>
+            <!-- Chat title with dropdown -->
+            <button class="chat-title-btn" id="chatTitleBtn" onclick="openChatMenu(event, currentConversationId, document.getElementById('chatTitleText')?.textContent || 'Chat', true)">
+                <span id="chatTitleText">Chat</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+        </div>
+        <button class="share-btn" onclick="shareChat()">Share</button>
     </div>
 
     <!-- Chats List View - shown only on /chat/recents route -->
@@ -3545,6 +3684,20 @@ async function loadConversationData(conversationId) {
             document.getElementById('chatHeaderProjectDot').style.background = currentProject.color || '#d97757';
             document.getElementById('chatHeaderProjectName').textContent = currentProject.name;
             headerProject.classList.add('visible');
+        } else if (headerProject) {
+            headerProject.classList.remove('visible');
+        }
+
+        // Update chat top bar with title
+        const chatTitleText = document.getElementById('chatTitleText');
+        if (chatTitleText) {
+            chatTitleText.textContent = data.title || 'Chat';
+        }
+
+        // Show top bar if there are messages
+        const topBar = document.getElementById('chatTopBar');
+        if (topBar && data.messages && data.messages.length > 0) {
+            topBar.classList.add('visible');
         }
 
     } catch (e) {
@@ -3820,11 +3973,14 @@ function renderConversations() {
 }
 
 function renderConversationItem(conv) {
+    const escapedTitle = escapeHtml(conv.title).replace(/'/g, "\\'").replace(/"/g, '&quot;');
     return `
         <div class="conversation-item ${conv.id === currentConversationId ? 'active' : ''} ${conv.project ? 'nested' : ''}"
              onclick="loadConversation('${conv.id}')"
-             data-id="${conv.id}">
+             data-id="${conv.id}"
+             data-title="${escapeHtml(conv.title)}">
             <div class="conversation-title">${escapeHtml(conv.title)}</div>
+            <button class="chat-item-menu" onclick="event.stopPropagation(); openChatMenu(event, '${conv.id}', '${escapedTitle}')">•••</button>
         </div>
     `;
 }
@@ -4017,8 +4173,9 @@ function clearChat() {
     document.getElementById('welcomeScreen').style.display = 'flex';
     document.querySelector('.input-area').style.display = 'none';
 
-    // Hide header project badge (welcome screen has its own)
+    // Hide header project badge and top bar (welcome screen has its own)
     document.getElementById('chatHeaderProject').classList.remove('visible');
+    document.getElementById('chatTopBar')?.classList.remove('visible');
 
     // Update greeting based on time of day
     const hour = new Date().getHours();
@@ -4760,17 +4917,28 @@ async function sendMessage() {
                 // Update message count
                 conv.message_count = (conv.message_count || 0) + 2; // user + assistant
 
+                // Show top bar now that there are messages
+                const topBar = document.getElementById('chatTopBar');
+                if (topBar) topBar.classList.add('visible');
+
                 // Generate AI title if this is the first message
                 if (conv.title === 'New Chat') {
                     // Set temporary title immediately for responsiveness
                     conv.title = msg.substring(0, 30) + (msg.length > 30 ? '...' : '');
                     renderConversations();
 
+                    // Update header title too
+                    const chatTitleText = document.getElementById('chatTitleText');
+                    if (chatTitleText) chatTitleText.textContent = conv.title;
+
                     // Generate better title with AI in background
                     generateConversationTitle(currentConversationId, msg).then(title => {
                         if (title) {
                             conv.title = title;
                             renderConversations();
+                            // Update header title too
+                            const chatTitleText = document.getElementById('chatTitleText');
+                            if (chatTitleText) chatTitleText.textContent = title;
                         }
                     });
                 } else {
@@ -5749,6 +5917,181 @@ document.addEventListener('click', function(e) {
         dropdown.classList.remove('active');
     }
 });
+
+// ============================================================================
+// CHAT MENU FUNCTIONS
+// ============================================================================
+
+let menuChatId = null;
+let menuChatTitle = null;
+
+function openChatMenu(event, chatId, chatTitle, fromHeader = false) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.getElementById('chatMenu');
+    if (!menu) return;
+
+    // Toggle off if same chat
+    if (menu.classList.contains('open') && menuChatId === chatId) {
+        closeChatMenu();
+        return;
+    }
+
+    menuChatId = chatId;
+    menuChatTitle = chatTitle;
+
+    // Position the menu
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    if (fromHeader) {
+        // Below the title button
+        menu.style.top = (rect.bottom + 6) + 'px';
+        menu.style.left = rect.left + 'px';
+    } else {
+        // Next to the ••• button in sidebar
+        menu.style.top = rect.top + 'px';
+        menu.style.left = (rect.right + 6) + 'px';
+    }
+
+    menu.classList.add('open');
+
+    // Adjust if off-screen
+    setTimeout(() => {
+        const menuRect = menu.getBoundingClientRect();
+        if (menuRect.right > window.innerWidth) {
+            menu.style.left = (rect.left - menuRect.width - 6) + 'px';
+        }
+        if (menuRect.bottom > window.innerHeight) {
+            menu.style.top = (window.innerHeight - menuRect.height - 10) + 'px';
+        }
+    }, 0);
+}
+
+function closeChatMenu() {
+    const menu = document.getElementById('chatMenu');
+    if (menu) menu.classList.remove('open');
+    menuChatId = null;
+    menuChatTitle = null;
+}
+
+// Close on click outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.chat-item-menu') &&
+        !e.target.closest('.chat-title-btn') &&
+        !e.target.closest('.chat-menu-dropdown')) {
+        closeChatMenu();
+    }
+});
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeChatMenu();
+});
+
+function chatMenuAction(action) {
+    if (!menuChatId) return;
+
+    switch (action) {
+        case 'star':
+            showToast('Starring coming soon', 'info');
+            break;
+
+        case 'rename':
+            const newName = prompt('Enter new name:', menuChatTitle);
+            if (newName && newName.trim() && newName !== menuChatTitle) {
+                fetch(`/api/conversations/${menuChatId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newName.trim() })
+                })
+                .then(r => {
+                    if (r.ok) {
+                        // Update sidebar item
+                        const item = document.querySelector(`.conversation-item[data-id="${menuChatId}"]`);
+                        if (item) {
+                            const titleEl = item.querySelector('.conversation-title');
+                            if (titleEl) titleEl.textContent = newName.trim();
+                            item.dataset.title = newName.trim();
+                        }
+                        // Update header title if viewing this chat
+                        if (currentConversationId === menuChatId) {
+                            const headerTitle = document.getElementById('chatTitleText');
+                            if (headerTitle) headerTitle.textContent = newName.trim();
+                        }
+                        showToast('Chat renamed', 'success');
+                    } else {
+                        showToast('Failed to rename', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to rename', 'error'));
+            }
+            break;
+
+        case 'addToProject':
+            showToast('Project picker coming soon', 'info');
+            break;
+
+        case 'delete':
+            if (confirm(`Delete "${menuChatTitle}"?`)) {
+                fetch(`/api/conversations/${menuChatId}`, { method: 'DELETE' })
+                .then(r => {
+                    if (r.ok) {
+                        // Remove from sidebar
+                        const item = document.querySelector(`.conversation-item[data-id="${menuChatId}"]`);
+                        if (item) item.remove();
+                        // Navigate away if viewing this chat
+                        if (currentConversationId === menuChatId) {
+                            window.location.href = '/chat';
+                        } else {
+                            showToast('Chat deleted', 'success');
+                        }
+                    } else {
+                        showToast('Failed to delete', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to delete', 'error'));
+            }
+            break;
+    }
+
+    closeChatMenu();
+}
+
+function shareChat() {
+    if (!currentConversationId) {
+        showToast('No chat to share', 'error');
+        return;
+    }
+    const url = window.location.origin + '/chat?conversation=' + currentConversationId;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url)
+            .then(() => showToast('Link copied to clipboard!', 'success'))
+            .catch(() => {
+                prompt('Copy this link:', url);
+            });
+    } else {
+        prompt('Copy this link:', url);
+    }
+}
+
+// Show/hide chat top bar based on conversation state
+function updateChatTopBar() {
+    const topBar = document.getElementById('chatTopBar');
+    const titleText = document.getElementById('chatTitleText');
+    if (!topBar) return;
+
+    if (currentConversationId && history && history.length > 0) {
+        topBar.classList.add('visible');
+        // Update title from current conversation
+        const conv = conversations.find(c => c.id === currentConversationId);
+        if (conv && titleText) {
+            titleText.textContent = conv.title;
+        }
+    } else {
+        topBar.classList.remove('visible');
+    }
+}
 
 // Sidebar state restoration - now handled by shared.js
 
