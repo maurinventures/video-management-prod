@@ -345,10 +345,24 @@ async function runAllTests() {
     console.log('='.repeat(50));
 
     BROWSER = await chromium.launch({ headless: true });
-    const context = await BROWSER.newContext();
+    const context = await BROWSER.newContext({
+        // Disable caching
+        bypassCSP: true,
+    });
 
     // Add auth cookie
     await context.addCookies([AUTH_COOKIE]);
+
+    // Disable cache
+    await context.route('**/*', route => {
+        route.continue({
+            headers: {
+                ...route.request().headers(),
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
+    });
 
     PAGE = await context.newPage();
 

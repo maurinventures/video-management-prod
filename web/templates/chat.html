@@ -3575,9 +3575,9 @@ let conversations = [];
 let isSelectMode = false;
 let selectedChats = new Set();
 
-// Chat menu state (using var for global scope accessibility)
-var menuChatId = null;
-var menuChatTitle = null;
+// Chat menu state - explicitly on window for guaranteed global access
+window.menuChatId = null;
+window.menuChatTitle = null;
 
 // Initialize based on route
 document.addEventListener('DOMContentLoaded', async () => {
@@ -4206,14 +4206,19 @@ function clearChat() {
     }
 
     // Focus the welcome input
-    setTimeout(() => document.getElementById('welcomeInput').focus(), 100);
+    setTimeout(() => {
+        const welcomeInput = document.getElementById('welcomeInput');
+        if (welcomeInput) welcomeInput.focus();
+    }, 100);
 }
 
 function showChatInterface() {
     // Hide welcome screen, show messages and input
-    document.getElementById('welcomeScreen').style.display = 'none';
-    chatMessages.style.display = '';  // Use CSS default (block)
-    document.querySelector('.input-area').style.display = '';
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    if (welcomeScreen) welcomeScreen.style.display = 'none';
+    if (chatMessages) chatMessages.style.display = '';  // Use CSS default (block)
+    const inputArea = document.querySelector('.input-area');
+    if (inputArea) inputArea.style.display = '';
 
     // Update header project badge
     updateHeaderProject();
@@ -4222,9 +4227,11 @@ function showChatInterface() {
 function updateHeaderProject() {
     const projectLink = document.getElementById('chatProjectLink');
     const breadcrumb = document.getElementById('chatBreadcrumb');
+    const projectName = document.getElementById('chatProjectName');
+    const projectDot = document.getElementById('chatProjectDot');
     if (currentProject) {
-        document.getElementById('chatProjectName').textContent = currentProject.name;
-        document.getElementById('chatProjectDot').style.background = currentProject.color || '#d97757';
+        if (projectName) projectName.textContent = currentProject.name;
+        if (projectDot) projectDot.style.background = currentProject.color || '#d97757';
         if (projectLink) projectLink.style.display = 'flex';
         if (breadcrumb) breadcrumb.style.display = 'inline';
     } else {
@@ -5944,13 +5951,13 @@ function openChatMenu(event, chatId, chatTitle, fromHeader = false) {
     if (!menu) return;
 
     // Toggle off if same chat
-    if (menu.classList.contains('open') && menuChatId === chatId) {
+    if (menu.classList.contains('open') && window.menuChatId === chatId) {
         closeChatMenu();
         return;
     }
 
-    menuChatId = chatId;
-    menuChatTitle = chatTitle;
+    window.menuChatId = chatId;
+    window.menuChatTitle = chatTitle;
 
     // Position the menu
     const rect = event.currentTarget.getBoundingClientRect();
@@ -5982,8 +5989,8 @@ function openChatMenu(event, chatId, chatTitle, fromHeader = false) {
 function closeChatMenu() {
     const menu = document.getElementById('chatMenu');
     if (menu) menu.classList.remove('open');
-    menuChatId = null;
-    menuChatTitle = null;
+    window.menuChatId = null;
+    window.menuChatTitle = null;
 }
 
 // Close on click outside
@@ -6001,7 +6008,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 function chatMenuAction(action) {
-    if (!menuChatId) return;
+    if (!window.menuChatId) return;
 
     switch (action) {
         case 'star':
@@ -6009,9 +6016,9 @@ function chatMenuAction(action) {
             break;
 
         case 'rename':
-            const newName = prompt('Enter new name:', menuChatTitle);
-            if (newName && newName.trim() && newName !== menuChatTitle) {
-                fetch(`/api/conversations/${menuChatId}`, {
+            const newName = prompt('Enter new name:', window.menuChatTitle);
+            if (newName && newName.trim() && newName !== window.menuChatTitle) {
+                fetch(`/api/conversations/${window.menuChatId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: newName.trim() })
@@ -6019,14 +6026,14 @@ function chatMenuAction(action) {
                 .then(r => {
                     if (r.ok) {
                         // Update sidebar item
-                        const item = document.querySelector(`.conversation-item[data-id="${menuChatId}"]`);
+                        const item = document.querySelector(`.conversation-item[data-id="${window.menuChatId}"]`);
                         if (item) {
                             const titleEl = item.querySelector('.conversation-title');
                             if (titleEl) titleEl.textContent = newName.trim();
                             item.dataset.title = newName.trim();
                         }
                         // Update header title if viewing this chat
-                        if (currentConversationId === menuChatId) {
+                        if (currentConversationId === window.menuChatId) {
                             const headerTitle = document.getElementById('chatTitleText');
                             if (headerTitle) headerTitle.textContent = newName.trim();
                         }
@@ -6044,15 +6051,15 @@ function chatMenuAction(action) {
             break;
 
         case 'delete':
-            if (confirm(`Delete "${menuChatTitle}"?`)) {
-                fetch(`/api/conversations/${menuChatId}`, { method: 'DELETE' })
+            if (confirm(`Delete "${window.menuChatTitle}"?`)) {
+                fetch(`/api/conversations/${window.menuChatId}`, { method: 'DELETE' })
                 .then(r => {
                     if (r.ok) {
                         // Remove from sidebar
-                        const item = document.querySelector(`.conversation-item[data-id="${menuChatId}"]`);
+                        const item = document.querySelector(`.conversation-item[data-id="${window.menuChatId}"]`);
                         if (item) item.remove();
                         // Navigate away if viewing this chat
-                        if (currentConversationId === menuChatId) {
+                        if (currentConversationId === window.menuChatId) {
                             window.location.href = '/chat';
                         } else {
                             showToast('Chat deleted', 'success');
