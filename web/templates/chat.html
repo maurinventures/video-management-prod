@@ -3189,7 +3189,7 @@
             <div class="recents-project-header expanded" onclick="toggleRecentsProject('{{ group.project.id }}')">
                 <span class="recents-project-dot" style="background: {{ group.project.color }}"></span>
                 <span class="recents-project-name">{{ group.project.name }}</span>
-                <svg class="recents-project-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                <svg class="recents-project-chevron" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
             </div>
             <div class="recents-project-items expanded" id="recents-project-{{ group.project.id }}">
                 {% for conv in group.conversations %}
@@ -3963,7 +3963,7 @@ function renderConversations() {
                 <div class="recents-project-header ${isExpanded ? 'expanded' : ''}" onclick="toggleRecentsProject('${group.project.id}')">
                     <span class="recents-project-dot" style="background: ${group.project.color || '#d97757'}"></span>
                     <span class="recents-project-name">${escapeHtml(group.project.name)}</span>
-                    <svg class="recents-project-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    <svg class="recents-project-chevron" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                 </div>
                 <div class="recents-project-items ${isExpanded ? 'expanded' : ''}" id="recents-project-${group.project.id}">
                     ${group.conversations.map(conv => renderConversationItem(conv)).join('')}
