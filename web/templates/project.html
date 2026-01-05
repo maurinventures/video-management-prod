@@ -102,15 +102,15 @@
         <div class="project-color-lg" id="projectColor"></div>
         <h1 class="project-title" id="projectTitle">Loading...</h1>
         <div class="project-actions">
-            <button class="project-action-btn" onclick="openEditModal()" title="Edit project">
+            <button class="project-action-btn" data-action="open-edit-modal" title="Edit project">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
             <div class="dropdown">
-                <button class="project-action-btn" onclick="toggleDropdown(event)" title="More options">
+                <button class="project-action-btn" data-action="toggle-dropdown" data-target-id="dropdownMenu" title="More options">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                 </button>
                 <div class="dropdown-menu" id="dropdownMenu">
-                    <button class="dropdown-item danger" onclick="deleteProject()">
+                    <button class="dropdown-item danger" data-action="delete-project">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         Delete project
                     </button>
@@ -134,11 +134,11 @@
 {% include '_dropdown_menu.html' %}
 
 <!-- Edit Project Modal -->
-<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+<div class="modal-overlay" id="editModal" data-action="close-edit-modal">
     <div class="modal">
         <div class="modal-header">
             <h2 class="modal-title">Edit project</h2>
-            <button class="modal-close" onclick="closeEditModal()">
+            <button class="modal-close" data-action="close-edit-modal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
         </div>
@@ -170,8 +170,8 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="saveProject()">Save changes</button>
+            <button class="btn btn-secondary" data-action="close-edit-modal">Cancel</button>
+            <button class="btn btn-primary" data-action="save-project">Save changes</button>
         </div>
     </div>
 </div>
@@ -220,7 +220,7 @@ function renderConversations() {
     const conversations = project.conversations || [];
 
     let html = `
-        <div class="new-chat-in-project" onclick="startNewChat()">
+        <div class="new-chat-in-project" data-action="start-new-chat">
             <div class="new-chat-in-project-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
             </div>

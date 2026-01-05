@@ -699,6 +699,26 @@ function setupEventDelegation() {
                 closeShareModal(event);
                 break;
 
+            case 'open-edit-modal':
+                openEditModal();
+                break;
+
+            case 'close-edit-modal':
+                closeEditModal();
+                break;
+
+            case 'save-project':
+                saveProject();
+                break;
+
+            case 'delete-project':
+                deleteProject();
+                break;
+
+            case 'start-new-chat':
+                startNewChat();
+                break;
+
             default:
                 console.log('Unknown action:', action);
         }
@@ -860,6 +880,67 @@ function closeShareModal(event) {
     if (event.target === event.currentTarget) {
         const modal = document.getElementById('shareModal');
         if (modal) modal.style.display = 'none';
+    }
+}
+
+// ============================================
+// Project Page Functions
+// ============================================
+
+/**
+ * Open project edit modal
+ */
+function openEditModal() {
+    const modal = document.getElementById('editModal');
+    if (modal) modal.classList.add('active');
+
+    // This function should be overridden by page-specific logic
+    if (typeof window.openEditModal === 'function') {
+        window.openEditModal();
+    }
+}
+
+/**
+ * Close project edit modal
+ */
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    if (modal) modal.classList.remove('active');
+}
+
+/**
+ * Save project changes
+ */
+function saveProject() {
+    // This function should be overridden by page-specific logic
+    if (typeof window.saveProject === 'function') {
+        window.saveProject();
+    }
+}
+
+/**
+ * Delete current project
+ */
+function deleteProject() {
+    // This function should be overridden by page-specific logic
+    if (typeof window.deleteProject === 'function') {
+        window.deleteProject();
+    }
+}
+
+/**
+ * Start new chat in project
+ */
+function startNewChat() {
+    // Check if PROJECT_ID is available (for project pages)
+    if (typeof PROJECT_ID !== 'undefined') {
+        window.location.href = `/chat?project=${PROJECT_ID}`;
+        return;
+    }
+
+    // Fallback - this function should be overridden by page-specific logic
+    if (typeof window.startNewChat === 'function') {
+        window.startNewChat();
     }
 }
 
