@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MV Internal{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Shared CSS - ONE SOURCE -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+
+    {% block head %}{% endblock %}
+
+    <!-- Anti-jitter script - restore sidebar state BEFORE first paint -->
+    <script>
+    (function() {
+        var style = document.createElement('style');
+        // Always disable chevron transitions on initial load
+        var css = '.sidebar-section-toggle { transition: none !important; } .recents-project-chevron { transition: none !important; }';
+
+        // Library section - if explicitly collapsed
+        if (localStorage.getItem('libraryExpanded') === 'false') {
+            css += '#librarySection { display: none !important; }';
+            css += '#libraryHeader .sidebar-section-toggle { transform: rotate(0deg) !important; }';
+        }
+
+        // Sidebar collapsed
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            css += '.sidebar { width: 0 !important; transform: translateX(-260px) !important; }';
+        }
+
+        style.id = 'sidebar-state-override';
+        style.textContent = css;
+        document.head.appendChild(style);
+    })();
+    </script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <div class="app-layout">
+        {% include '_sidebar.html' %}
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% include '_dropdown_menu.html' %}
+
+    <!-- Floating sidebar toggle when collapsed -->
+    <button class="sidebar-toggle-floating" onclick="toggleSidebar()" title="Open sidebar" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M9 3v18"/>
+        </svg>
+    </button>
+
+    <script src="{{ url_for('static', filename='js/shared.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

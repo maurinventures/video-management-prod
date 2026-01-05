@@ -1,0 +1,85 @@
+:root {
+    --sidebar-width: 260px;
+    --color-bg: #f5f4ef;
+    --color-bg-secondary: #faf9f7;
+    --color-border: #e5e4df;
+    --color-text: #1a1a1a;
+    --color-text-muted: #888;
+    --color-text-secondary: #666;
+    --color-accent: #d97757;
+    --color-hover: #f0efea;
+    --color-active: #e5e4df;
+}
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--color-bg);
+    min-height: 100vh;
+    display: flex;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.app-layout {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    position: relative;
+    height: 100vh;
+}
+
+/* Anti-jitter script styles */
+.sidebar-section-toggle {
+    transition: transform 0.2s;
+}
+
+.recents-project-chevron {
+    transition: transform 0.2s;
+}
+
+/* Floating toggle when sidebar collapsed */
+.sidebar-toggle-floating {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--color-border);
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    z-index: 100;
+    transition: all 0.15s;
+}
+
+.sidebar-toggle-floating:hover {
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+.sidebar-toggle-floating svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sidebar.collapsed ~ .main-content .sidebar-toggle-floating {
+    display: flex;
+}

@@ -1760,6 +1760,45 @@ def get_sidebar_data(user_id):
         return sidebar_projects, list(project_groups.values()), ungrouped
 
 
+def get_sidebar_context(user_id):
+    """Get standardized sidebar data for template rendering."""
+    sidebar_projects, conv_groups, conv_ungrouped = get_sidebar_data(user_id)
+
+    # Get current user info
+    with DatabaseSession() as db_session:
+        user = db_session.query(User).filter(User.id == user_id).first()
+        user_data = {
+            'name': user.name if user else 'User',
+            'email': user.email if user else '',
+            'is_admin': user.email in ['joy@maurinventures.com'] if user else False
+        } if user else {'name': 'User', 'email': '', 'is_admin': False}
+
+    return {
+        'recent_projects': conv_groups,
+        'standalone_chats': conv_ungrouped,
+        'user': user_data
+    }
+
+
+def render_with_sidebar(template, active_page, **kwargs):
+    """Render any template with consistent sidebar data included."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = UUID(session['user_id'])
+    context = get_sidebar_context(user_id)
+    context['active_page'] = active_page
+    context.update(kwargs)
+
+    return render_template(template, **context)
+
+
+@app.route('/test-shared')
+def test_shared():
+    """Test route for new shared template structure."""
+    return render_with_sidebar('test_shared.html', active_page='test')
+
+
 @app.route('/chat')
 def chat():
     """New chat - shows welcome screen for starting a new conversation."""

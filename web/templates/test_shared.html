@@ -1,0 +1,44 @@
+{% extends 'base_new.html' %}
+
+{% block title %}Test Shared Structure - MV Internal{% endblock %}
+
+{% block content %}
+<div style="padding: 2rem; max-width: 900px; margin: 0 auto;">
+    <h1>🚀 Testing Shared Structure</h1>
+    <p>This is a test page to verify our new shared base template and sidebar work correctly.</p>
+
+    <div style="margin-top: 2rem;">
+        <h2>Sidebar Data Test</h2>
+        <p><strong>Active Page:</strong> {{ active_page }}</p>
+        <p><strong>User Name:</strong> {{ user.name }}</p>
+        <p><strong>Recent Projects:</strong> {{ recent_projects|length }} projects</p>
+        <p><strong>Standalone Chats:</strong> {{ standalone_chats|length }} chats</p>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <h2>Navigation Test</h2>
+        <p>Click the sidebar navigation items to test routing:</p>
+        <ul>
+            <li><a href="/chat">New Chat</a></li>
+            <li><a href="/chat/recents">Chats List</a></li>
+            <li><a href="/projects">Projects</a></li>
+            <li><a href="/videos">Videos</a></li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <h2>CSS Test</h2>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button class="btn">Primary Button</button>
+            <button class="btn btn-secondary">Secondary Button</button>
+            <button class="btn btn-accent">Accent Button</button>
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <h2>Component Test</h2>
+        <div class="badge badge-primary">Test Badge</div>
+        <input type="text" class="input" placeholder="Test input field" style="margin-top: 1rem; width: 300px;">
+    </div>
+</div>
+{% endblock %}

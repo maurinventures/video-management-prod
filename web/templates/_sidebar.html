@@ -1,0 +1,169 @@
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <a href="/chat" class="sidebar-logo">MV Internal</a>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" title="Close sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M9 3v18"/>
+            </svg>
+        </button>
+    </div>
+
+    <a href="/chat" class="new-chat-btn{% if active_page == 'new_chat' %} active{% endif %}" id="newChatBtn">
+        <div class="new-chat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        New chat
+    </a>
+
+    <nav class="sidebar-nav">
+        <a href="/chat/recents" class="sidebar-nav-item{% if active_page == 'chats' %} active{% endif %}" id="chatsNavItem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Chats
+        </a>
+        <a href="/projects" class="sidebar-nav-item{% if active_page == 'projects' %} active{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            Projects
+        </a>
+        <div class="sidebar-section-header expanded" id="libraryHeader" onclick="toggleLibrarySection()">
+            <div class="sidebar-section-header-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                Library
+            </div>
+            <svg class="sidebar-section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6"/>
+            </svg>
+        </div>
+        <div class="sidebar-section-items expanded" id="librarySection">
+            <a href="/videos" class="sidebar-nav-item{% if active_page == 'videos' %} active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="23 7 16 12 23 17 23 7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+                Videos
+            </a>
+            <a href="/audio" class="sidebar-nav-item{% if active_page == 'audio' %} active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18V5l12-2v13"/>
+                    <circle cx="6" cy="18" r="3"/>
+                    <circle cx="18" cy="16" r="3"/>
+                </svg>
+                Audio
+            </a>
+            <a href="/transcripts" class="sidebar-nav-item{% if active_page == 'transcripts' %} active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                </svg>
+                Transcripts
+            </a>
+            <a href="/personas" class="sidebar-nav-item{% if active_page == 'personas' %} active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Personas
+            </a>
+        </div>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Recents</div>
+    </div>
+
+    <div class="conversations-list" id="conversationsList">
+        {% for group in recent_projects %}
+        <div class="recents-project-group">
+            <div class="recents-project-header expanded" onclick="toggleRecentsProject('{{ group.project.id }}')">
+                <span class="recents-project-dot" style="background: {{ group.project.color }}"></span>
+                <span class="recents-project-name">{{ group.project.name }}</span>
+                <svg class="recents-project-chevron" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="recents-project-items expanded" id="recents-project-{{ group.project.id }}">
+                {% for conv in group.conversations %}
+                <div class="conversation-item nested{% if conv.id == conversation_id %} active{% endif %}"
+                     onclick="loadConversation('{{ conv.id }}')"
+                     data-id="{{ conv.id }}"
+                     data-title="{{ conv.title }}">
+                    <div class="conversation-title">{{ conv.title }}</div>
+                    <button class="chat-item-menu" onclick="event.stopPropagation(); openChatMenu(event, '{{ conv.id }}', '{{ conv.title|e }}')">•••</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% for conv in standalone_chats %}
+        <div class="conversation-item{% if conv.id == conversation_id %} active{% endif %}"
+             onclick="loadConversation('{{ conv.id }}')"
+             data-id="{{ conv.id }}"
+             data-title="{{ conv.title }}">
+            <div class="conversation-title">{{ conv.title }}</div>
+            <button class="chat-item-menu" onclick="event.stopPropagation(); openChatMenu(event, '{{ conv.id }}', '{{ conv.title|e }}')">•••</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="sidebar-footer" style="position: relative;">
+        <div class="user-info">
+            <div class="user-avatar">{{ user.name[0].upper() if user and user.name else 'U' }}</div>
+            <div class="user-details">
+                <span class="user-name">{{ user.name if user and user.name else 'User' }}</span>
+            </div>
+        </div>
+        <button class="user-menu-btn" onclick="toggleUserMenu(event)" title="Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6"/>
+            </svg>
+        </button>
+        <div class="user-menu-dropdown" id="userMenuDropdown">
+            <div class="user-menu-header">
+                <div class="user-menu-email">{{ user.email if user and user.email else '' }}</div>
+                {% if user and user.is_admin %}
+                <span class="user-menu-role">Admin</span>
+                {% endif %}
+            </div>
+            <div class="user-menu-section">
+                <a href="/ai-logs" class="user-menu-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    AI Logs
+                </a>
+            </div>
+            {% if user and user.is_admin %}
+            <div class="user-menu-section">
+                <a href="/admin/invite" class="user-menu-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                    Invite User
+                </a>
+            </div>
+            {% endif %}
+            <div class="user-menu-section">
+                <a href="/logout" class="user-menu-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Log out
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
