@@ -3277,7 +3277,7 @@
                     <div style="flex: 1; min-width: 0;">
                         <div class="conversation-title">{{ conv.title }}</div>
                     </div>
-                    <button class="chat-menu-trigger" onclick="toggleChatMenu(event, '{{ conv.id }}')" title="More options">
+                    <button class="chat-menu-trigger" onclick="toggleSidebarMenu(event, '{{ conv.id }}')" title="More options">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                     </button>
                     <div class="chat-menu" id="chat-menu-{{ conv.id }}">
@@ -3311,7 +3311,7 @@
             <div style="flex: 1; min-width: 0;">
                 <div class="conversation-title">{{ conv.title }}</div>
             </div>
-            <button class="chat-menu-trigger" onclick="toggleChatMenu(event, '{{ conv.id }}')" title="More options">
+            <button class="chat-menu-trigger" onclick="toggleSidebarMenu(event, '{{ conv.id }}')" title="More options">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
             </button>
             <div class="chat-menu" id="chat-menu-{{ conv.id }}">
@@ -4086,7 +4086,7 @@ function renderConversationItem(conv) {
             <div style="flex: 1; min-width: 0;">
                 <div class="conversation-title">${escapeHtml(conv.title)}</div>
             </div>
-            <button class="chat-menu-trigger" onclick="toggleChatMenu(event, '${conv.id}')" title="More options">
+            <button class="chat-menu-trigger" onclick="toggleSidebarMenu(event, '${conv.id}')" title="More options">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
             </button>
             <div class="chat-menu" id="chat-menu-${conv.id}">
@@ -6065,10 +6065,10 @@ document.addEventListener('click', function(e) {
 });
 
 // ============================================================================
-// CHAT CONTEXT MENU FUNCTIONS
+// SIDEBAR CHAT CONTEXT MENU FUNCTIONS
 // ============================================================================
 
-function toggleChatMenu(event, chatId) {
+function toggleSidebarMenu(event, chatId) {
     event.preventDefault();
     event.stopPropagation();
 
