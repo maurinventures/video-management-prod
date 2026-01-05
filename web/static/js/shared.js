@@ -400,6 +400,35 @@ const Chat = {
             btn.addEventListener('click', () => this.handleAttachOption(btn.dataset.action));
         });
 
+        // Add to project hover functionality
+        const projectBtn = document.querySelector('.attach-option[data-action="add-to-project"]');
+        const projectSubmenu = document.getElementById('projectSubmenu');
+
+        if (projectBtn && projectSubmenu) {
+            // Show submenu on hover
+            projectBtn.addEventListener('mouseenter', () => {
+                this.loadProjects();
+                projectSubmenu.style.display = 'block';
+            });
+
+            // Hide submenu when leaving both button and submenu
+            projectBtn.addEventListener('mouseleave', () => {
+                setTimeout(() => {
+                    if (!projectSubmenu.matches(':hover') && !projectBtn.matches(':hover')) {
+                        projectSubmenu.style.display = 'none';
+                    }
+                }, 100);
+            });
+
+            projectSubmenu.addEventListener('mouseleave', () => {
+                setTimeout(() => {
+                    if (!projectSubmenu.matches(':hover') && !projectBtn.matches(':hover')) {
+                        projectSubmenu.style.display = 'none';
+                    }
+                }, 100);
+            });
+        }
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', () => {
             this.closeAllDropdowns();
@@ -667,32 +696,20 @@ const Chat = {
         // Clear existing projects
         projectList.innerHTML = '';
 
-        if (projects.length === 0) {
-            projectList.innerHTML = `
-                <div class="no-projects">
-                    <span style="color: var(--color-text-secondary); font-size: 11px; padding: 16px; display: block; text-align: center;">
-                        No projects yet
-                    </span>
-                </div>
-            `;
-            return;
-        }
-
-        // Add each project
+        // Add each project (Claude.ai style - simple project name display)
         projects.forEach(project => {
             const projectElement = document.createElement('button');
             projectElement.className = 'project-option';
             projectElement.dataset.projectId = project.id;
             projectElement.innerHTML = `
-                <div class="project-color-dot" style="background-color: ${project.color || '#6B7280'}"></div>
-                <div class="project-info">
-                    <div class="project-name">${project.name}</div>
-                    ${project.description ? `<div class="project-description">${project.description}</div>` : ''}
-                </div>
+                <span class="project-icon">📁</span>
+                <span class="project-name">${project.name}</span>
             `;
 
             projectElement.addEventListener('click', () => {
                 this.assignToProject(project.id, project.name);
+                // Hide submenu after selection
+                document.getElementById('projectSubmenu').style.display = 'none';
             });
 
             projectList.appendChild(projectElement);
@@ -701,7 +718,11 @@ const Chat = {
         // Add event listener for create new project button
         const createBtn = document.querySelector('.project-option.create-new');
         if (createBtn) {
-            createBtn.onclick = () => this.showCreateProjectModal();
+            createBtn.onclick = () => {
+                this.showCreateProjectModal();
+                // Hide submenu after clicking create new project
+                document.getElementById('projectSubmenu').style.display = 'none';
+            };
         }
     },
 
