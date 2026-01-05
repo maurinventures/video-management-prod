@@ -235,7 +235,8 @@
     background: transparent;
     font-size: 1rem;
     height: 32px;
-    width: 28px !important;
+    width: 60px !important;
+    background: red !important;
     border-radius: 0.375rem;
     color: var(--color-text-muted, #64748b);
 
