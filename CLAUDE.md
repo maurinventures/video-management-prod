@@ -1,6 +1,6 @@
 # Claude Code Rules for MV Internal
 
-**Last Updated:** 2026-01-05 04:00 UTC
+**Last Updated:** 2026-01-05 08:20 UTC
 
 ---
 
@@ -49,26 +49,74 @@ Proceed? (yes/no)
 
 ---
 
+## SESSION LOGGING — DO NOT BLOAT THE REPO
+
+### ⚠️ IMPORTANT: Logs go in `/logs` folder, NOT project root
+
+```bash
+# CORRECT - logs folder (gitignored)
+mkdir -p logs
+logs/session_20260105_081500.md
+
+# WRONG - project root (bloats repo)
+session_20260105_081500.md  # ❌ DO NOT CREATE HERE
+```
+
+### Ensure .gitignore includes:
+
+```
+logs/
+session_*.md
+```
+
+### When to create session logs
+
+| Situation | Create Log? |
+|-----------|-------------|
+| Major feature completed | ✅ Yes |
+| Complex bug fix | ✅ Yes |
+| Small single-file change | ❌ No |
+| Quick config tweak | ❌ No |
+| User says "skip the log" | ❌ No |
+
+### Log format (keep it brief)
+
+```bash
+mkdir -p logs
+cat > "logs/session_$(date +%Y%m%d_%H%M%S).md" << 'EOF'
+# Session: [DATE]
+## Summary
+[1-2 sentences max]
+## Changes
+- file.html: [brief description]
+## Status
+Working / Needs follow-up
+EOF
+```
+
+**NO verbose templates. Keep logs SHORT.**
+
+---
+
 ## PROJECT CONSTANTS — SINGLE SOURCE OF TRUTH
 
 ### Server & Deployment
 
-| Key | Value | Notes |
-|-----|-------|-------|
-| SSH_HOST | `mv-internal` | SSH config alias |
-| DOMAIN | `maurinventuresinternal.com` | NO subdomain |
-| SERVER_IP | `54.198.253.138` | EC2 instance |
-| SSH_USER | `ec2-user` | |
-| SSH_KEY | `~/Documents/keys/per_aspera/per-aspera-key.pem` | |
-| REMOTE_PATH | `/home/ec2-user/mv-internal` | NOT /var/www/ |
-| GIT_REPO_PATH | `/home/ec2-user/video-management` | Git repo |
-| SERVICE_NAME | `mv-internal` | systemd service |
+| Key | Value |
+|-----|-------|
+| SSH_HOST | `mv-internal` |
+| DOMAIN | `maurinventuresinternal.com` |
+| SERVER_IP | `54.198.253.138` |
+| SSH_USER | `ec2-user` |
+| SSH_KEY | `~/Documents/keys/per_aspera/per-aspera-key.pem` |
+| REMOTE_PATH | `/home/ec2-user/mv-internal` |
+| GIT_REPO_PATH | `/home/ec2-user/video-management` |
+| SERVICE_NAME | `mv-internal` |
 
 ### Local Development
 
 | Key | Value |
 |-----|-------|
-| LOCAL_WEB_PATH | `web/` |
 | TEMPLATES | `web/templates/` |
 | STATIC | `web/static/` |
 | SHARED_JS | `web/static/js/shared.js` |
@@ -90,50 +138,24 @@ Proceed? (yes/no)
 
 ### Principle
 
-Every component, style, and data source must be defined **ONCE** and reused everywhere. Duplication leads to inconsistency.
+Every component, style, and data source must be defined **ONCE** and reused everywhere.
 
 ### Template Architecture
 
-| File | Purpose | Used By |
-|------|---------|---------|
-| `base.html` | Master layout (head, body, scripts) | ALL templates extend this |
-| `_sidebar.html` | Sidebar partial | Included in base.html |
-| `_dropdown_menu.html` | Shared dropdown menu | Included in base.html |
-| `_chat_input.html` | Chat input component | Chat pages |
-| `_message.html` | Chat message component | Chat pages |
+| File | Purpose |
+|------|---------|
+| `base.html` | Master layout — ALL templates extend this |
+| `_sidebar.html` | Sidebar partial — included in base.html |
+| `_dropdown_menu.html` | Shared dropdown — included in base.html |
 
-**Template Pattern:**
+**Pattern:**
 ```html
-<!-- base.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-    {% block head %}{% endblock %}
-</head>
-<body>
-    <div class="app-layout">
-        {% include '_sidebar.html' %}
-        <main class="main-content">
-            {% block content %}{% endblock %}
-        </main>
-    </div>
-    {% include '_dropdown_menu.html' %}
-    <script src="{{ url_for('static', filename='js/shared.js') }}"></script>
-    {% block scripts %}{% endblock %}
-</body>
-</html>
+<!-- base.html includes shared components ONCE -->
+{% include '_sidebar.html' %}
 
-<!-- Any page (e.g., videos.html) -->
+<!-- Every page extends base.html -->
 {% extends 'base.html' %}
-{% block title %}Videos - MV Internal{% endblock %}
-{% block content %}
-<div class="videos-page">
-    <!-- Page-specific content only -->
-</div>
-{% endblock %}
+{% block content %}...{% endblock %}
 ```
 
 ### CSS Architecture
@@ -141,61 +163,25 @@ Every component, style, and data source must be defined **ONCE** and reused ever
 | File | Purpose |
 |------|---------|
 | `base.css` | Variables, reset, typography |
-| `layout.css` | App structure, grid |
 | `sidebar.css` | Sidebar styles ONLY |
-| `components.css` | Buttons, inputs, cards, menus, tables |
+| `components.css` | Buttons, inputs, cards, menus |
 
 **Rules:**
-- NO inline `<style>` blocks in templates
+- NO inline `<style>` blocks
 - NO duplicate CSS across files
-- Use CSS variables for colors, sizes
 - One component = one place in CSS
 
 ### JavaScript Architecture
 
-| File | Purpose |
-|------|---------|
-| `shared.js` | ALL shared functionality |
-
-**shared.js Structure:**
-```javascript
-// Sidebar management
-const Sidebar = {
-    init() { },
-    toggle(sectionId) { },
-    saveState() { },
-    restoreState() { }
-};
-
-// Dropdown menu management  
-const DropdownMenu = {
-    show(event, targetId, targetType) { },
-    hide() { },
-    handleAction(action) { }
-};
-
-// Chat actions
-const ChatActions = {
-    star(chatId) { },
-    rename(chatId) { },
-    delete(chatId) { }
-};
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    Sidebar.init();
-});
-```
+- ALL shared code in `shared.js`
+- Use event delegation for dynamic elements
+- No inline `onclick` handlers
 
 ### Flask Architecture
 
-**Every route must use shared helper:**
-
 ```python
-# In app.py
-
 def get_sidebar_data():
-    """Get data needed for sidebar - call in EVERY route"""
+    """Call in EVERY route"""
     return {
         'recent_projects': get_projects_with_recent_chats(),
         'standalone_chats': get_standalone_recent_chats(),
@@ -203,29 +189,16 @@ def get_sidebar_data():
     }
 
 def render_with_sidebar(template, active_page, **kwargs):
-    """Render any template with sidebar data included"""
     context = get_sidebar_data()
     context['active_page'] = active_page
     context.update(kwargs)
     return render_template(template, **context)
 
-# All routes use this pattern:
+# All routes use this:
 @app.route('/videos')
 def videos():
-    return render_with_sidebar('videos.html',
-        active_page='videos',
-        videos=get_all_videos()
-    )
+    return render_with_sidebar('videos.html', active_page='videos', videos=get_all_videos())
 ```
-
-### Why This Matters
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Sidebar looks different on /videos vs /chat | Duplicate sidebar HTML in each template | Single `_sidebar.html` partial |
-| CSS inconsistent across pages | Inline styles or duplicate CSS | Single CSS files, no inline |
-| Forgot to pass sidebar data to one route | Each route manually builds context | `render_with_sidebar()` helper |
-| Changed button style, only updated one place | Button CSS in multiple files | Single `components.css` |
 
 ---
 
@@ -233,18 +206,10 @@ def videos():
 
 ### Rule 1: NEVER INVENT
 
-Never invent, guess, or interpolate:
-- Hostnames or subdomains
-- File paths
-- API endpoints
-- SSH aliases
-- CSS class names
-
-If a value is not in this file or in existing code, **ASK**.
+Never invent hostnames, paths, endpoints, CSS classes. If not in this file or existing code, **ASK**.
 
 ### Rule 2: VERIFY BEFORE EXECUTE
 
-Before running any destructive or remote command:
 ```bash
 echo "Will run: ssh $SSH_HOST ..."
 # Then execute
@@ -253,121 +218,56 @@ echo "Will run: ssh $SSH_HOST ..."
 ### Rule 3: CANONICAL DEPLOY SEQUENCE
 
 ```bash
-# 1. Commit and push
-git add -A && git commit -m "Description of change"
+git add -A && git commit -m "Description"
 git push origin main
-
-# 2. Pull on server and sync
 ssh mv-internal "cd ~/video-management && git pull && rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__' --exclude='*.pyc'"
-
-# 3. Restart service
 ssh mv-internal "sudo systemctl restart mv-internal"
-
-# 4. Verify running
-ssh mv-internal "sudo systemctl status mv-internal --no-pager | head -5"
 ```
 
 ### Rule 4: ONE CHANGE AT A TIME
 
-1. State what you will change and why
-2. Show the exact before/after
-3. Make the change
-4. Verify it works
-5. Commit with descriptive message
-6. Provide rollback command
-
-**Never batch multiple unrelated changes.**
+Never batch multiple unrelated changes.
 
 ### Rule 5: NO DUPLICATION
 
-Before adding ANY code:
+Before adding code, check if similar exists:
 ```bash
-# Check if similar code exists
-grep -rn "similar pattern" web/
-
-# Check if it belongs in shared location
-# - HTML component → create partial in templates/
-# - CSS → add to appropriate .css file
-# - JavaScript → add to shared.js
-# - Flask logic → add helper function
+grep -rn "pattern" web/
 ```
 
 ### Rule 6: CSS/HTML CONSISTENCY
 
-Before using a CSS class:
 ```bash
 grep -n "\.classname" web/templates/*.html web/static/css/*.css
 ```
 
-**Use existing class names exactly. Never create variants.**
-
 ### Rule 7: SERVER-SIDE RENDERING FOR SIDEBAR
 
-Sidebar content must be **server-rendered via Jinja**, not JavaScript fetch.
-
-**Why:** JavaScript-loaded content causes layout jitter.
+Sidebar must be Jinja-rendered, not JavaScript-fetched.
 
 ### Rule 8: PARTIALS FOR SHARED COMPONENTS
 
-Any HTML that appears on multiple pages MUST be a partial:
-
-```bash
-# Check if component is duplicated
-grep -l "component-html" web/templates/*.html | wc -l
-# If > 1, extract to partial
-```
+Any HTML on multiple pages → extract to partial.
 
 ---
 
 ## TESTING CHECKLIST
 
-After ANY frontend change:
+After ANY change:
 
 - [ ] Hard refresh `/chat` — no console errors
 - [ ] Sidebar renders immediately — no jitter
-- [ ] Click sidebar items — navigation works
-- [ ] Collapse/expand sections — state persists
-- [ ] Sidebar IDENTICAL on /chat, /projects, /videos, /audio, /personas
-
-After ANY backend change:
-
+- [ ] Sidebar IDENTICAL on all pages
 - [ ] Service restarts without error
-- [ ] `curl https://maurinventuresinternal.com/chat` returns 200
-
----
-
-## AUTOMATED SITE AUDIT
-
-### Run Audit
-
-```bash
-node tests/full-site-audit.js
-```
-
-### When to Run
-
-| Situation | Run Audit? |
-|-----------|------------|
-| After fixing navigation bugs | ✅ Yes |
-| After changing sidebar | ✅ Yes |
-| After adding new routes | ✅ Yes |
-| Before marking feature complete | ✅ Yes |
 
 ---
 
 ## ROLLBACK PROCEDURE
 
 ```bash
-# 1. Check what broke
 ssh mv-internal "sudo journalctl -u mv-internal -n 50 --no-pager"
-
-# 2. Find last working commit
 git log --oneline -10
-
-# 3. Revert
 git revert HEAD --no-edit
-
-# 4. Redeploy
 git push origin main
 ssh mv-internal "cd ~/video-management && git pull && rsync -av ~/video-management/ ~/mv-internal/ --exclude='.git' --exclude='__pycache__' --exclude='*.pyc'"
 ssh mv-internal "sudo systemctl restart mv-internal"
@@ -375,7 +275,7 @@ ssh mv-internal "sudo systemctl restart mv-internal"
 
 ---
 
-## SSH CONFIG REFERENCE
+## SSH CONFIG
 
 ```
 Host mv-internal
@@ -386,45 +286,14 @@ Host mv-internal
 
 ---
 
-## DEBUGGING CHECKLIST
+## DEBUGGING
 
 | Symptom | Check |
 |---------|-------|
-| SSH fails | `~/.ssh/config` matches above |
-| Path not found | Use `/home/ec2-user/mv-internal` |
+| SSH fails | ~/.ssh/config |
 | Service won't start | `sudo journalctl -u mv-internal -n 50` |
-| Changes not appearing | Did you `systemctl restart`? |
-| CSS not working | Grep to verify class name |
+| Changes not appearing | Did you restart service? |
 | Sidebar inconsistent | Must use `_sidebar.html` partial |
-| Sidebar jitters | Must be server-rendered |
-
----
-
-## SESSION LOGGING — REQUIRED
-
-At END of every session:
-
-```bash
-SESSION_LOG="session_$(date +%Y%m%d_%H%M%S).md"
-cat > "$SESSION_LOG" << 'EOF'
-# Session Log: [DATE]
-
-## Model Used
-claude-sonnet-4-20250514
-
-## Summary
-[What was accomplished]
-
-## Changes Made
-| File | Change |
-|------|--------|
-| path/to/file | Description |
-
-## Verification
-- [ ] Tested X — PASS/FAIL
-EOF
-echo "Session log: $SESSION_LOG"
-```
 
 ---
 
@@ -440,8 +309,20 @@ openssl aes-256-cbc -salt -pbkdf2 -in config/credentials.yaml -out config/creden
 
 ---
 
-## AFTER EVERY SESSION
+## CLEANUP TASKS
 
-1. Create session log
-2. Update CHANGELOG.md
-3. Inform user of log location
+### Remove existing session logs from repo root
+
+```bash
+# Move existing logs to logs folder
+mkdir -p logs
+mv session_*.md logs/ 2>/dev/null
+
+# Add to gitignore if not already
+echo "logs/" >> .gitignore
+echo "session_*.md" >> .gitignore
+
+# Commit cleanup
+git add -A && git commit -m "Move session logs to /logs folder, update gitignore"
+git push origin main
+```
