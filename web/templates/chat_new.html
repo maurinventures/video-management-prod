@@ -109,53 +109,107 @@
                                     </svg>
                                 </button>
 
-                                <!-- Model Dropdown -->
+                                <!-- Model Dropdown - Two Column Card Layout -->
                                 <div class="claude-model-dropdown" id="modelDropdown">
-                                    <div class="claude-model-option" data-model="opus-4.5">
-                                        <div class="model-info">
-                                            <span class="model-option-name">Opus 4.5</span>
-                                            <span class="model-option-desc">Most capable for complex work</span>
-                                        </div>
-                                    </div>
-                                    <div class="claude-model-option" data-model="sonnet-4.5">
-                                        <div class="model-info">
-                                            <span class="model-option-name">Sonnet 4.5</span>
-                                            <span class="model-option-desc">Best for everyday tasks</span>
-                                        </div>
-                                    </div>
-                                    <div class="claude-model-option selected" data-model="haiku-4.5">
-                                        <div class="model-info">
-                                            <span class="model-option-name">Haiku 4.5</span>
-                                            <span class="model-option-desc">Fastest for quick answers</span>
-                                        </div>
-                                        <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                        </svg>
-                                    </div>
-                                    <div class="dropdown-divider"></div>
-                                    <div class="claude-model-option more-models" id="moreModelsBtn">
-                                        <span>More models</span>
-                                        <svg class="submenu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="9 18 15 12 9 6"></polyline>
-                                        </svg>
-                                    </div>
+                                    <div class="model-dropdown-container">
+                                        <!-- Main Models Column -->
+                                        <div class="model-column main-models">
+                                            <div class="claude-model-card" data-model="opus-4.5">
+                                                <div class="model-info">
+                                                    <span class="model-option-name">Opus 4.5</span>
+                                                    <span class="model-option-desc">Most capable for complex work</span>
+                                                </div>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
 
-                                    <!-- More Models Submenu -->
-                                    <div class="claude-more-models-submenu" id="moreModelsSubmenu">
-                                        <div class="claude-model-option" data-model="opus-4.1">
-                                            <span class="model-option-name">Opus 4.1</span>
+                                            <div class="claude-model-card" data-model="sonnet-4.5">
+                                                <div class="model-info">
+                                                    <span class="model-option-name">Sonnet 4.5</span>
+                                                    <span class="model-option-desc">Best for everyday tasks</span>
+                                                </div>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="claude-model-card selected" data-model="haiku-4.5">
+                                                <div class="model-info">
+                                                    <span class="model-option-name">Haiku 4.5</span>
+                                                    <span class="model-option-desc">Fastest for quick answers</span>
+                                                </div>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="more-models-section" id="moreModelsBtn">
+                                                <span>More models</span>
+                                                <svg class="submenu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                                </svg>
+                                            </div>
                                         </div>
-                                        <div class="claude-model-option" data-model="opus-4">
-                                            <span class="model-option-name">Opus 4</span>
-                                        </div>
-                                        <div class="claude-model-option" data-model="sonnet-4">
-                                            <span class="model-option-name">Sonnet 4</span>
-                                        </div>
-                                        <div class="claude-model-option" data-model="opus-3">
-                                            <span class="model-option-name">Opus 3</span>
-                                        </div>
-                                        <div class="claude-model-option" data-model="haiku-3.5">
-                                            <span class="model-option-name">Haiku 3.5</span>
+
+                                        <!-- Additional Models Column -->
+                                        <div class="model-column more-models" id="moreModelsSubmenu">
+                                            <div class="claude-model-card" data-model="opus-4.1">
+                                                <span class="model-option-name">Opus 4.1</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="claude-model-card" data-model="opus-4">
+                                                <span class="model-option-name">Opus 4</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="claude-model-card" data-model="sonnet-4">
+                                                <span class="model-option-name">Sonnet 4</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="claude-model-card" data-model="opus-3">
+                                                <span class="model-option-name">Opus 3</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="claude-model-card" data-model="haiku-3.5">
+                                                <span class="model-option-name">Haiku 3.5</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <!-- OpenAI Models -->
+                                            <div class="claude-model-card" data-model="gpt-4">
+                                                <span class="model-option-name">GPT-4</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="claude-model-card" data-model="gpt-4-turbo">
+                                                <span class="model-option-name">GPT-4 Turbo</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+
+                                            <div class="claude-model-card" data-model="gpt-3.5-turbo">
+                                                <span class="model-option-name">GPT-3.5 Turbo</span>
+                                                <svg class="model-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

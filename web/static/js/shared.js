@@ -395,8 +395,8 @@ const Chat = {
             this.toggleDropdown('modelDropdown');
         });
 
-        // Model options
-        document.querySelectorAll('.model-option[data-model]').forEach(btn => {
+        // Model options - Updated for new card layout
+        document.querySelectorAll('.claude-model-card[data-model]').forEach(btn => {
             btn.addEventListener('click', () => this.selectModel(btn.dataset.model));
         });
 
@@ -480,13 +480,21 @@ const Chat = {
         // Update button text
         const names = {
             'opus-4.5': 'Opus 4.5',
+            'sonnet-4.5': 'Sonnet 4.5',
+            'haiku-4.5': 'Haiku 4.5',
+            'opus-4.1': 'Opus 4.1',
+            'opus-4': 'Opus 4',
             'sonnet-4': 'Sonnet 4',
-            'haiku-4.5': 'Haiku 4.5'
+            'opus-3': 'Opus 3',
+            'haiku-3.5': 'Haiku 3.5',
+            'gpt-4': 'GPT-4',
+            'gpt-4-turbo': 'GPT-4 Turbo',
+            'gpt-3.5-turbo': 'GPT-3.5 Turbo'
         };
         this.elements.modelName.textContent = names[model] || model;
 
-        // Update selected state
-        document.querySelectorAll('.model-option').forEach(btn => {
+        // Update selected state - Updated for new card layout
+        document.querySelectorAll('.claude-model-card').forEach(btn => {
             btn.classList.toggle('selected', btn.dataset.model === model);
         });
 

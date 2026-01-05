@@ -350,46 +350,66 @@
     white-space: nowrap;
 }
 
-/* Claude Model Dropdown */
+/* Claude Model Dropdown - Two Column Card Layout */
 .claude-model-dropdown {
     position: absolute;
     bottom: 100%;
     right: 0;
     margin-bottom: 0.5rem;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    min-width: 20rem;
-    padding: 0.5rem;
+    background: transparent;
     display: none;
     z-index: 1000;
+    min-width: 600px;
 }
 
 .claude-model-dropdown.open {
     display: block;
 }
 
-.claude-model-option {
+.model-dropdown-container {
+    display: flex;
+    gap: 1rem;
+    font-size: 12px;
+}
+
+.model-column {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 0.75rem;
+    flex: 1;
+}
+
+.model-column.main-models {
+    min-width: 280px;
+}
+
+.model-column.more-models {
+    min-width: 200px;
+}
+
+.claude-model-card {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1rem;
+    padding: 12px 16px;
     border: none;
     background: transparent;
-    border-radius: 0.5rem;
+    border-radius: 8px;
     cursor: pointer;
     text-align: left;
     transition: all 200ms ease;
     position: relative;
+    margin-bottom: 4px;
 }
 
-.claude-model-option:hover {
-    background: #f3f4f6;
+.claude-model-card:hover {
+    background: #f8f9fa;
 }
 
-.claude-model-option.selected {
+.claude-model-card.selected {
     background: #f0f9ff;
 }
 
@@ -402,64 +422,67 @@
 
 .model-option-name {
     font-size: 12px;
-    font-weight: 430;
+    font-weight: 500;
     line-height: 16px;
     letter-spacing: normal;
-    color: var(--color-text, #444);
+    color: #1f2937;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .model-option-desc {
     font-size: 12px;
-    font-weight: 430;
+    font-weight: 400;
     line-height: 16px;
     letter-spacing: normal;
-    color: var(--color-text-muted, #6b7280);
+    color: #9ca3af;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin-top: 2px;
 }
 
 .model-check {
     color: #3b82f6;
     opacity: 0;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
-.claude-model-option.selected .model-check {
+.claude-model-card.selected .model-check {
     opacity: 1;
 }
 
-.dropdown-divider {
-    height: 1px;
-    background: #e5e7eb;
-    margin: 0.5rem 0;
+/* More Models Section */
+.more-models-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 200ms ease;
+    margin-top: 8px;
 }
 
-.more-models {
-    color: var(--color-text-muted) !important;
+.more-models-section:hover {
+    background: #f8f9fa;
 }
 
 .submenu-arrow {
     color: #9ca3af;
-    opacity: 0.7;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
-/* More Models Submenu */
-.claude-more-models-submenu {
-    position: absolute;
-    top: 0;
-    right: 100%;
-    margin-right: 0.5rem;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    min-width: 12rem;
-    padding: 0.5rem;
-    display: none;
-    z-index: 1001;
-}
-
-.claude-more-models-submenu.open {
-    display: block;
+/* Global font size for chat interface */
+.claude-main,
+.claude-welcome,
+.claude-input-container,
+.claude-model-selector {
+    font-size: 12px;
 }
 
 .claude-more-models-submenu .claude-model-option {
