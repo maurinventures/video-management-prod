@@ -596,14 +596,10 @@ const Chat = {
     },
 
     checkAttachAvailability() {
-        // Hide attach button if no active conversation
+        // Ensure attach button is visible if we have an active conversation
         const conversationId = this.getConversationId();
-        if (this.elements.attachBtn) {
-            if (conversationId) {
-                this.elements.attachBtn.style.display = 'flex';
-            } else {
-                this.elements.attachBtn.style.display = 'none';
-            }
+        if (this.elements.attachBtn && conversationId) {
+            this.elements.attachBtn.style.display = 'flex';
         }
     },
 
