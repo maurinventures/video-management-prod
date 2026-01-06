@@ -100,7 +100,9 @@ class ConfigLoader:
             database = db_config.get("database", "video_management")
             username = db_config.get("username", "postgres")
             password = db_config.get("password", "")
-            return f"postgresql://{username}:{password}@{host}:{port}/{database}?sslmode=require"
+            # Use SSL for production, disable for local development
+            sslmode = "require" if host != "localhost" else "disable"
+            return f"postgresql://{username}:{password}@{host}:{port}/{database}?sslmode={sslmode}"
 
         # Fall back to legacy secrets.yaml format
         rds_secrets = self.secrets.get("rds", {})
@@ -112,7 +114,9 @@ class ConfigLoader:
         username = rds_secrets.get("username", "postgres")
         password = rds_secrets.get("password", "")
 
-        return f"postgresql://{username}:{password}@{host}:{port}/{database}?sslmode=require"
+        # Use SSL for production, disable for local development
+        sslmode = "require" if host != "localhost" else "disable"
+        return f"postgresql://{username}:{password}@{host}:{port}/{database}?sslmode={sslmode}"
 
     @property
     def openai_api_key(self) -> str:

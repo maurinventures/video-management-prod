@@ -1,7 +1,7 @@
 # Claude Code Rules for Internal Platform
 
-**Project:** Internal Platform (Digital Brain)  
-**Architecture:** React frontend + Flask API  
+**Project:** Internal Platform
+**Architecture:** React frontend + Flask API
 **Last Updated:** 2026-01-06
 
 ---
@@ -30,8 +30,9 @@ React Frontend (port 3000) → Flask API (port 5000) → Services → RDS/S3
      /frontend/                  /web/app.py           /scripts/
 ```
 
-**UI Components (Figma Make):** `maurinventures/Digitalbrainplatformuidesign`  
+**UI Components (Figma Make):** `maurinventures/Digitalbrainplatformuidesign`
 **Claude Code prompts:** https://www.notion.so/2e071d8cc1fa8191b355d7eba238a28c
+**Project specs:** https://www.notion.so/2df71d8cc1fa815aa51cfc1bd4ce7852
 
 ---
 

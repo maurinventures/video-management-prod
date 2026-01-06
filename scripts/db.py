@@ -233,6 +233,8 @@ class User(Base):
     # Relationships
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     projects = relationship("Project", back_populates="user", cascade="all, delete-orphan")
+    backup_codes = relationship("BackupCode", back_populates="user", cascade="all, delete-orphan")
+    password_reset_tokens = relationship("PasswordResetToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Project(Base):
@@ -267,6 +269,7 @@ class Conversation(Base):
     video_id = Column(UUID(as_uuid=True), ForeignKey("videos.id", ondelete="SET NULL"), nullable=True)
     is_collaborative = Column(Integer, default=0)  # 1 if shared with team
     starred = Column(Boolean, default=False)  # Whether chat is starred by user
+    preferred_model = Column(String(50), default="gpt-4o")  # User's preferred AI model for this conversation
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -640,6 +643,120 @@ class FrameAnalysis(Base):
 
     # Relationships
     frame = relationship("VideoFrame", back_populates="analysis")
+
+
+class BackupCode(Base):
+    """Two-factor authentication backup codes for account recovery."""
+
+    __tablename__ = "backup_codes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    code_hash = Column(String(255), nullable=False)  # SHA-256 hash of the backup code
+    is_used = Column(Integer, default=0)  # 1 = already used, 0 = available
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    user = relationship("User", back_populates="backup_codes")
+
+
+class PasswordResetToken(Base):
+    """Password reset tokens for secure password recovery."""
+
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = Column(String(255), nullable=False)  # SHA-256 hash of the reset token
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_used = Column(Integer, default=0)  # 1 = already used, 0 = available
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    user = relationship("User", back_populates="password_reset_tokens")
+
+
+class ExternalContent(Base):
+    """External content: articles, web clips, PDFs, external videos."""
+
+    __tablename__ = "external_content"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Content identification
+    title = Column(String(500), nullable=False)
+    content_type = Column(String(50), nullable=False)  # article, web_clip, pdf, external_video, other
+    description = Column(Text)
+
+    # Source information
+    source_url = Column(Text)  # Original URL if fetched from web
+    original_filename = Column(String(500))  # If uploaded as file
+
+    # File storage (optional - for uploaded files)
+    s3_key = Column(String(1000))  # S3 path if file was uploaded/cached
+    s3_bucket = Column(String(255), default="mv-brain")
+    file_size_bytes = Column(BigInteger)
+    file_format = Column(String(20))  # pdf, html, mp4, etc.
+
+    # Content analysis
+    content_text = Column(Text)  # Extracted/parsed text content
+    content_summary = Column(Text)  # AI-generated summary
+    word_count = Column(Integer)
+
+    # For video/audio content
+    duration_seconds = Column(Numeric(10, 2))
+    thumbnail_s3_key = Column(String(1000))
+
+    # Metadata
+    content_date = Column(Date)  # Publication date or relevant date
+    author = Column(String(255))
+    tags = Column(JSONB, default=[])  # User-defined tags
+    keywords = Column(JSONB, default=[])  # Auto-extracted keywords
+    extra_data = Column(JSONB, default={})  # Flexible metadata
+
+    # Status and processing
+    status = Column(String(50), default="uploaded")  # uploaded, processed, transcribed, error
+    processing_notes = Column(Text)
+
+    # User and timestamps
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    creator = relationship("User")
+    segments = relationship("ExternalContentSegment", back_populates="content", cascade="all, delete-orphan")
+
+
+class ExternalContentSegment(Base):
+    """Searchable segments of external content."""
+
+    __tablename__ = "external_content_segments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    content_id = Column(UUID(as_uuid=True), ForeignKey("external_content.id", ondelete="CASCADE"), nullable=False)
+
+    # Segment identification
+    segment_index = Column(Integer, nullable=False)
+    section_title = Column(String(255))  # For articles: heading, For videos: chapter
+
+    # Time-based (for video/audio) or position-based (for text)
+    start_time = Column(Numeric(10, 3))  # For video/audio content
+    end_time = Column(Numeric(10, 3))
+    start_position = Column(Integer)  # For text content (character position)
+    end_position = Column(Integer)
+
+    # Content
+    text = Column(Text, nullable=False)
+    speaker = Column(String(100))  # For video/audio with multiple speakers
+    confidence = Column(Numeric(5, 4))  # For transcribed content
+
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    # Relationships
+    content = relationship("ExternalContent", back_populates="segments")
 
 
 # Database session management
