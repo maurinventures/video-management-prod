@@ -178,16 +178,16 @@ Please change your password after your first login.
         return False
 
 
-# DISABLED: Web interface components (CLI-only mode)
-# app = Flask(__name__)
+# Flask web application initialization
+app = Flask(__name__)
 
 # Session configuration - persistent sessions that survive browser close
 # Secret key is fixed so sessions persist across server restarts
-# app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'mv-internal-secret-key-2026-change-in-production')
-# app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only
-# app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent XSS
-# app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-# app.config['PERMANENT_SESSION_LIFETIME'] = 604800  # 7 days in seconds
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'mv-internal-secret-key-2026-change-in-production')
+app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent XSS
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 604800  # 7 days in seconds
 
 
 def format_duration(seconds):
@@ -208,8 +208,8 @@ def format_timestamp(dt):
 
 
 # DISABLED: Jinja filters for web interface
-# app.jinja_env.filters['duration'] = format_duration
-# app.jinja_env.filters['timestamp'] = format_timestamp
+app.jinja_env.filters['duration'] = format_duration
+app.jinja_env.filters['timestamp'] = format_timestamp
 
 
 # DISABLED: Authentication middleware for web routes
@@ -238,12 +238,12 @@ def format_timestamp(dt):
 
 
 # DISABLED: Web routes (CLI-only mode)
-# @app.route('/')
-# def index():
-#     """Redirect to chat (requires login)."""
-#     if 'user_id' not in session:
-#         return redirect(url_for('login'))
-#     return redirect(url_for('chat'))
+@app.route('/')
+def index():
+    """Redirect to chat (requires login)."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return redirect(url_for('chat'))
 
 
 # @app.route('/videos')
@@ -1800,7 +1800,7 @@ def test_shared():
     return render_with_sidebar('test_shared.html', active_page='test')
 
 
-# @app.route('/chat')
+@app.route('/chat')
 def chat():
     """New chat - shows welcome screen for starting a new conversation."""
     # Support ?project=<id> to create new chat in a specific project
@@ -1808,7 +1808,7 @@ def chat():
     return render_with_sidebar('chat_new.html', 'new_chat', view='new', project_id=project_id)
 
 
-# @app.route('/chat/recents')
+@app.route('/chat/recents')
 def chat_recents():
     """Chat list - shows all recent conversations."""
     if 'user_id' not in session:
@@ -2354,7 +2354,7 @@ def api_set_conversation_project(conversation_id):
         return jsonify({'success': True, 'project_id': str(conversation.project_id) if conversation.project_id else None})
 
 
-# @app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     """User login page."""
     if request.method == 'POST':
