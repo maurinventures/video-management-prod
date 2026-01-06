@@ -61,6 +61,7 @@ class Video(Base):
     # Relationships
     transcripts = relationship("Transcript", back_populates="video", cascade="all, delete-orphan")
     clips = relationship("Clip", back_populates="source_video", cascade="all, delete-orphan")
+    frames = relationship("VideoFrame", back_populates="video", cascade="all, delete-orphan")
 
 
 class Transcript(Base):
@@ -579,6 +580,66 @@ class AudioSegment(Base):
 
     # Relationships
     audio = relationship("AudioRecording", back_populates="segments")
+
+
+class VideoFrame(Base):
+    """Individual frames extracted from videos for AI analysis."""
+
+    __tablename__ = "video_frames"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    video_id = Column(UUID(as_uuid=True), ForeignKey("videos.id", ondelete="CASCADE"), nullable=False)
+    frame_number = Column(Integer, nullable=False)  # Sequential frame number
+    timestamp_seconds = Column(Numeric(10, 3), nullable=False)  # Time in video when frame was captured
+    s3_key = Column(String(1000), nullable=False, unique=True)  # S3 path to frame image
+    file_size_bytes = Column(BigInteger)
+    image_format = Column(String(10), default="png")  # png, jpg, etc
+    width = Column(Integer)  # Image dimensions
+    height = Column(Integer)
+    extraction_method = Column(String(50), default="ffmpeg")  # Tool used to extract frame
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    # Relationships
+    video = relationship("Video", back_populates="frames")
+    analysis = relationship("FrameAnalysis", back_populates="frame", cascade="all, delete-orphan")
+
+
+class FrameAnalysis(Base):
+    """AI analysis results for video frames - who is doing what."""
+
+    __tablename__ = "frame_analysis"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    frame_id = Column(UUID(as_uuid=True), ForeignKey("video_frames.id", ondelete="CASCADE"), nullable=False)
+
+    # AI provider info
+    ai_provider = Column(String(50), default="openai")  # openai, aws_rekognition, etc
+    ai_model = Column(String(100), default="gpt-4o")  # Specific model used
+    analysis_version = Column(String(20), default="1.0")  # Schema version for analysis format
+
+    # Structured analysis data
+    people_detected = Column(JSONB, default=[])  # List of people detected with descriptions
+    actions_detected = Column(JSONB, default=[])  # List of actions/activities observed
+    objects_detected = Column(JSONB, default=[])  # List of notable objects in frame
+    setting_description = Column(Text)  # Description of environment/location
+
+    # Raw AI response
+    raw_analysis = Column(Text)  # Full AI response text
+    confidence_score = Column(Float)  # Overall confidence in analysis (0-1)
+
+    # Processing metadata
+    processing_time_ms = Column(Integer)  # Time taken for AI analysis
+    tokens_used = Column(Integer)  # API tokens consumed
+    cost_cents = Column(Integer)  # Estimated cost in cents
+
+    # Quality/status
+    status = Column(String(50), default="completed")  # completed, error, pending
+    error_message = Column(Text)
+
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    # Relationships
+    frame = relationship("VideoFrame", back_populates="analysis")
 
 
 # Database session management

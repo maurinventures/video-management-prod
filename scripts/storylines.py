@@ -11,9 +11,10 @@ from uuid import UUID
 import hashlib
 
 from openai import OpenAI
+from sqlalchemy import func
 
 from .config_loader import get_config
-from .db import DatabaseSession, Transcript, TranscriptSegment, Video, Clip, CompiledVideo, CompiledVideoClip
+from .db import DatabaseSession, Transcript, TranscriptSegment, Video, Clip, CompiledVideo, CompiledVideoClip, AudioRecording, AudioSegment
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,8 @@ STORYLINES_CACHE = Path("local_transcripts/storylines_cache.json")
 @dataclass
 class ClipSpec:
     """Specification for a single clip in a storyline."""
-    video_id: str
-    video_title: str
+    content_id: str
+    content_title: str
     start_time: float
     end_time: float
     text: str
@@ -36,8 +37,8 @@ class ClipSpec:
 
     def to_dict(self) -> dict:
         return {
-            "video_id": self.video_id,
-            "video_title": self.video_title,
+            "content_id": self.content_id,
+            "content_title": self.content_title,
             "start_time": self.start_time,
             "end_time": self.end_time,
             "text": self.text,
@@ -46,9 +47,13 @@ class ClipSpec:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ClipSpec":
+        # Handle both old and new field names for backward compatibility
+        content_id = data.get("content_id") or data.get("video_id")
+        content_title = data.get("content_title") or data.get("video_title")
+
         return cls(
-            video_id=data["video_id"],
-            video_title=data["video_title"],
+            content_id=content_id,
+            content_title=content_title,
             start_time=data["start_time"],
             end_time=data["end_time"],
             text=data["text"],
@@ -90,30 +95,63 @@ class Storyline:
 def get_openai_client() -> OpenAI:
     """Get configured OpenAI client."""
     config = get_config()
-    api_key = config.secrets.get("openai", {}).get("api_key")
+    api_key = config.openai_api_key
     if not api_key:
         raise ValueError("OpenAI API key not found in credentials.yaml")
     return OpenAI(api_key=api_key)
 
 
 def get_all_transcripts() -> List[Dict[str, Any]]:
-    """Fetch all completed transcripts with their segments."""
+    """Fetch all completed transcripts (video + audio) with smart truncation for token limits."""
     transcripts_data = []
+    MAX_SEGMENTS_PER_CONTENT = 200  # Limit segments per content piece
+    MAX_TOTAL_ESTIMATED_TOKENS = 25000  # Stay well under 30K limit
+
+    def estimate_tokens(text: str) -> int:
+        """Rough token estimation (1 token ≈ 0.75 words)."""
+        return int(len(text.split()) / 0.75)
 
     with DatabaseSession() as session:
-        transcripts = session.query(Transcript).filter(
-            Transcript.status == "completed"
-        ).all()
+        # Get 1 top video transcript
+        video_transcripts = session.query(Transcript).filter(
+            Transcript.status == "completed",
+            Transcript.word_count.is_not(None),
+            Transcript.word_count >= 4000  # Only transcripts with very extensive content
+        ).order_by(Transcript.word_count.desc()).limit(1).all()
 
-        for transcript in transcripts:
+        total_tokens = 0
+
+        for transcript in video_transcripts:
             video = session.query(Video).filter(Video.id == transcript.video_id).first()
-            segments = session.query(TranscriptSegment).filter(
+            all_segments = session.query(TranscriptSegment).filter(
                 TranscriptSegment.transcript_id == transcript.id
             ).order_by(TranscriptSegment.start_time).all()
 
+            # Truncate segments if too many
+            segments = all_segments[:MAX_SEGMENTS_PER_CONTENT]
+
+            # Calculate token usage
+            content_tokens = sum(estimate_tokens(seg.text) for seg in segments if seg.text)
+
+            if total_tokens + content_tokens > MAX_TOTAL_ESTIMATED_TOKENS:
+                # Further truncate to fit in budget
+                remaining_budget = MAX_TOTAL_ESTIMATED_TOKENS - total_tokens
+                truncated_segments = []
+                current_tokens = 0
+
+                for seg in segments:
+                    seg_tokens = estimate_tokens(seg.text) if seg.text else 0
+                    if current_tokens + seg_tokens < remaining_budget:
+                        truncated_segments.append(seg)
+                        current_tokens += seg_tokens
+                    else:
+                        break
+                segments = truncated_segments
+
             transcript_data = {
-                "video_id": str(video.id),
-                "video_title": video.filename,
+                "content_id": str(video.id),
+                "content_title": video.filename,
+                "content_type": "VIDEO",
                 "duration": float(video.duration_seconds) if video.duration_seconds else 0,
                 "segments": [
                     {
@@ -125,7 +163,68 @@ def get_all_transcripts() -> List[Dict[str, Any]]:
                 ]
             }
             transcripts_data.append(transcript_data)
+            actual_tokens = sum(estimate_tokens(seg.text) for seg in segments if seg.text)
+            total_tokens += actual_tokens
+            logger.info(f"Added video transcript: {video.filename} ({len(segments)} segments, ~{actual_tokens} tokens)")
 
+        # Get 1 audio recording with substantial content
+        audio_recordings = session.query(AudioRecording).filter(
+            AudioRecording.id.in_(
+                session.query(AudioSegment.audio_id)
+                .group_by(AudioSegment.audio_id)
+                .having(func.count(AudioSegment.id) >= 100)  # At least 100 segments
+            )
+        ).limit(1).all()
+
+        for audio in audio_recordings:
+            all_segments = session.query(AudioSegment).filter(
+                AudioSegment.audio_id == audio.id
+            ).order_by(AudioSegment.start_time).all()
+
+            # Truncate segments if too many
+            segments = all_segments[:MAX_SEGMENTS_PER_CONTENT]
+
+            # Calculate token usage
+            content_tokens = sum(estimate_tokens(seg.text) for seg in segments if seg.text)
+
+            if total_tokens + content_tokens > MAX_TOTAL_ESTIMATED_TOKENS:
+                # Further truncate to fit in budget
+                remaining_budget = MAX_TOTAL_ESTIMATED_TOKENS - total_tokens
+                truncated_segments = []
+                current_tokens = 0
+
+                for seg in segments:
+                    seg_tokens = estimate_tokens(seg.text) if seg.text else 0
+                    if current_tokens + seg_tokens < remaining_budget:
+                        truncated_segments.append(seg)
+                        current_tokens += seg_tokens
+                    else:
+                        break
+                segments = truncated_segments
+
+            if segments:  # Only add if we have segments after truncation
+                word_count = sum(len(seg.text.split()) for seg in segments if seg.text)
+
+                transcript_data = {
+                    "content_id": str(audio.id),
+                    "content_title": audio.title or audio.filename,
+                    "content_type": "AUDIO",
+                    "duration": float(audio.duration_seconds) if audio.duration_seconds else 0,
+                    "segments": [
+                        {
+                            "start": float(seg.start_time),
+                            "end": float(seg.end_time),
+                            "text": seg.text,
+                        }
+                        for seg in segments
+                    ]
+                }
+                transcripts_data.append(transcript_data)
+                actual_tokens = sum(estimate_tokens(seg.text) for seg in segments if seg.text)
+                total_tokens += actual_tokens
+                logger.info(f"Added audio transcript: {audio.title or audio.filename} ({len(segments)} segments, ~{actual_tokens} tokens)")
+
+    logger.info(f"Total content selected: {len(transcripts_data)} (video + audio), estimated tokens: {total_tokens}")
     return transcripts_data
 
 
@@ -135,19 +234,20 @@ def generate_storylines_prompt(transcripts: List[Dict]) -> str:
     # Format transcripts for the prompt
     transcript_text = ""
     for t in transcripts:
-        transcript_text += f"\n\n=== VIDEO: {t['video_title']} (ID: {t['video_id']}) ===\n"
+        content_type = t.get('content_type', 'VIDEO')
+        transcript_text += f"\n\n=== {content_type}: {t['content_title']} (ID: {t['content_id']}) ===\n"
         transcript_text += f"Total duration: {t['duration']:.1f} seconds\n\n"
         for seg in t['segments']:
             transcript_text += f"[{seg['start']:.1f}s - {seg['end']:.1f}s] {seg['text']}\n"
 
-    prompt = f"""You are a professional video editor creating compelling short-form content. Analyze the following video transcripts and create 5 different 60-second storylines that could be created by stitching clips together.
+    prompt = f"""You are a professional video editor creating compelling short-form content. Analyze the following video and audio transcripts and create 5 different 60-second storylines that could be created by stitching clips together.
 
 TRANSCRIPTS:
 {transcript_text}
 
 REQUIREMENTS:
 1. Each storyline should be approximately 60 seconds total (between 45-75 seconds)
-2. Use clips from ANY of the available videos - mix and match for the best narrative
+2. Use clips from ANY of the available videos AND audio recordings - mix and match for the best narrative
 3. Each clip should be a complete thought/sentence (don't cut mid-sentence)
 4. Focus on: compelling quotes, interesting insights, emotional moments, surprising statements
 5. Create DIVERSE storylines - different themes, different tones, different focuses
@@ -171,8 +271,8 @@ Respond in this exact JSON format:
       "estimated_duration": 58.5,
       "clips": [
         {{
-          "video_id": "uuid-here",
-          "video_title": "Video Name",
+          "content_id": "uuid-here",
+          "content_title": "Video/Audio Name",
           "start_time": 10.0,
           "end_time": 25.0,
           "text": "The exact text from that segment"
@@ -508,7 +608,7 @@ def format_storyline_preview(storyline: Storyline) -> str:
     output.append("-" * 70)
 
     for i, clip in enumerate(storyline.clips, 1):
-        output.append(f"\n[Clip {i}] {clip.video_title}")
+        output.append(f"\n[Clip {i}] {clip.content_title}")
         output.append(f"  Time: {clip.start_time:.1f}s - {clip.end_time:.1f}s ({clip.duration:.1f}s)")
         output.append(f"  Text: \"{clip.text}\"")
 

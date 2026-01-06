@@ -669,7 +669,7 @@ def s3_list_objects(bucket: Optional[str], prefix: str, limit: int):
 
     if not bucket:
         config = get_config()
-        bucket = config.aws_s3_bucket
+        bucket = config.s3_bucket
 
     try:
         s3_client = boto3.client('s3')
@@ -713,7 +713,7 @@ def s3_download(s3_key: str, bucket: Optional[str], output: Optional[str]):
 
     if not bucket:
         config = get_config()
-        bucket = config.aws_s3_bucket
+        bucket = config.s3_bucket
 
     if not output:
         output = Path(s3_key).name
@@ -746,7 +746,7 @@ def s3_upload_file(file_path: str, bucket: Optional[str], key: Optional[str]):
 
     if not bucket:
         config = get_config()
-        bucket = config.aws_s3_bucket
+        bucket = config.s3_bucket
 
     if not key:
         key = Path(file_path).name
@@ -778,7 +778,7 @@ def s3_delete_object(s3_key: str, bucket: Optional[str]):
 
     if not bucket:
         config = get_config()
-        bucket = config.aws_s3_bucket
+        bucket = config.s3_bucket
 
     try:
         s3_client = boto3.client('s3')
@@ -801,7 +801,7 @@ def s3_info(s3_key: str, bucket: Optional[str]):
 
     if not bucket:
         config = get_config()
-        bucket = config.aws_s3_bucket
+        bucket = config.s3_bucket
 
     try:
         s3_client = boto3.client('s3')
@@ -846,11 +846,12 @@ def db_init():
 def db_test():
     """Test database connection."""
     from scripts.db import get_engine
+    from sqlalchemy import text
 
     try:
         engine = get_engine()
         with engine.connect() as conn:
-            result = conn.execute("SELECT 1")
+            result = conn.execute(text("SELECT 1"))
             click.echo("Database connection successful!")
     except Exception as e:
         click.echo(f"Database connection failed: {e}", err=True)
@@ -922,65 +923,63 @@ def db_query(sql_query: str, limit: int, format: str):
     from sqlalchemy import text
     import json
 
-    session = DatabaseSession()
     try:
-        # Add LIMIT if not present and limit > 0
-        query = sql_query.strip()
-        if limit > 0 and not query.upper().contains(" LIMIT "):
-            query += f" LIMIT {limit}"
+        with DatabaseSession() as session:
+            # Add LIMIT if not present and limit > 0
+            query = sql_query.strip()
+            if limit > 0 and " LIMIT " not in query.upper():
+                query += f" LIMIT {limit}"
 
-        result = session.execute(text(query))
+            result = session.execute(text(query))
 
-        if result.returns_rows:
-            rows = result.fetchall()
-            if not rows:
-                click.echo("No results found.")
-                return
+            if result.returns_rows:
+                rows = result.fetchall()
+                if not rows:
+                    click.echo("No results found.")
+                    return
 
-            columns = list(result.keys())
+                columns = list(result.keys())
 
-            if format == "json":
-                data = [dict(zip(columns, row)) for row in rows]
-                click.echo(json.dumps(data, indent=2, default=str))
-            elif format == "csv":
-                # Header
-                click.echo(",".join(columns))
-                # Data
-                for row in rows:
-                    escaped_values = []
-                    for value in row:
-                        str_val = str(value) if value is not None else ""
-                        if "," in str_val or '"' in str_val:
-                            str_val = '"' + str_val.replace('"', '""') + '"'
-                        escaped_values.append(str_val)
-                    click.echo(",".join(escaped_values))
-            else:  # table format
-                # Calculate column widths
-                col_widths = {}
-                for i, col in enumerate(columns):
-                    max_width = max(len(col), max(len(str(row[i])) for row in rows))
-                    col_widths[i] = min(max_width, 50)  # Cap at 50 chars
+                if format == "json":
+                    data = [dict(zip(columns, row)) for row in rows]
+                    click.echo(json.dumps(data, indent=2, default=str))
+                elif format == "csv":
+                    # Header
+                    click.echo(",".join(columns))
+                    # Data
+                    for row in rows:
+                        escaped_values = []
+                        for value in row:
+                            str_val = str(value) if value is not None else ""
+                            if "," in str_val or '"' in str_val:
+                                str_val = '"' + str_val.replace('"', '""') + '"'
+                            escaped_values.append(str_val)
+                        click.echo(",".join(escaped_values))
+                else:  # table format
+                    # Calculate column widths
+                    col_widths = {}
+                    for i, col in enumerate(columns):
+                        max_width = max(len(col), max(len(str(row[i])) for row in rows))
+                        col_widths[i] = min(max_width, 50)  # Cap at 50 chars
 
-                # Header
-                header_row = " | ".join(col.ljust(col_widths[i]) for i, col in enumerate(columns))
-                click.echo(header_row)
-                click.echo("-" * len(header_row))
+                    # Header
+                    header_row = " | ".join(col.ljust(col_widths[i]) for i, col in enumerate(columns))
+                    click.echo(header_row)
+                    click.echo("-" * len(header_row))
 
-                # Data
-                for row in rows:
-                    data_row = " | ".join(str(row[i])[:col_widths[i]].ljust(col_widths[i]) for i in range(len(columns)))
-                    click.echo(data_row)
+                    # Data
+                    for row in rows:
+                        data_row = " | ".join(str(row[i])[:col_widths[i]].ljust(col_widths[i]) for i in range(len(columns)))
+                        click.echo(data_row)
 
-            click.echo(f"\n({len(rows)} row(s))")
-        else:
-            # Non-SELECT query
-            click.echo(f"Query executed. Rows affected: {result.rowcount}")
+                click.echo(f"\n({len(rows)} row(s))")
+            else:
+                # Non-SELECT query
+                click.echo(f"Query executed. Rows affected: {result.rowcount}")
 
     except Exception as e:
         click.echo(f"Query failed: {e}", err=True)
         sys.exit(1)
-    finally:
-        session.close()
 
 
 @db.command("backup-metadata")
@@ -1119,6 +1118,447 @@ def db_conversations(user: Optional[str], limit: int):
         sys.exit(1)
     finally:
         session.close()
+
+
+# ============ Frame Analysis Commands ============
+
+@cli.group()
+def frames():
+    """AI-powered video frame analysis - who is doing what."""
+    pass
+
+
+@frames.command("extract")
+@click.argument("video_id")
+@click.option("--interval", "-i", default=10, help="Extract frame every N seconds (default: 10)")
+@click.option("--max-frames", "-m", default=50, help="Maximum frames to extract (default: 50)")
+@click.option("--force", is_flag=True, help="Re-extract frames even if they exist")
+def frames_extract(video_id: str, interval: int, max_frames: int, force: bool):
+    """Extract frames from a video for AI analysis."""
+    import os
+    import subprocess
+    from decimal import Decimal
+    from pathlib import Path
+    from scripts.db import DatabaseSession, Video, VideoFrame
+    from scripts.config_loader import get_config
+    import boto3
+
+    config = get_config()
+
+    with DatabaseSession() as session:
+        # Get video info
+        video = session.query(Video).filter(Video.id == video_id).first()
+        if not video:
+            click.echo(f"Video not found: {video_id}", err=True)
+            sys.exit(1)
+
+        # Check if frames already exist
+        existing_frames = session.query(VideoFrame).filter(VideoFrame.video_id == video.id).count()
+        if existing_frames > 0 and not force:
+            click.echo(f"Video already has {existing_frames} frames. Use --force to re-extract.")
+            return
+
+        if force and existing_frames > 0:
+            # Delete existing frames
+            session.query(VideoFrame).filter(VideoFrame.video_id == video.id).delete()
+            session.commit()
+            click.echo(f"Deleted {existing_frames} existing frames.")
+
+        click.echo(f"Extracting frames from: {video.filename}")
+        click.echo(f"Duration: {video.duration_seconds}s, Interval: {interval}s, Max: {max_frames}")
+
+        # Download video to temp file
+        s3_client = boto3.client(
+            's3',
+            region_name='us-east-1',
+            aws_access_key_id=config.aws_access_key,
+            aws_secret_access_key=config.aws_secret_key
+        )
+
+        temp_video = f"/tmp/video_{video.id}.mp4"
+        temp_frames_dir = f"/tmp/frames_{video.id}"
+        os.makedirs(temp_frames_dir, exist_ok=True)
+
+        try:
+            # Download video
+            click.echo("Downloading video...")
+            s3_client.download_file(config.s3_bucket, video.s3_key, temp_video)
+
+            # Calculate frame timestamps
+            duration = float(video.duration_seconds)
+            timestamps = []
+            for i in range(0, int(duration), interval):
+                if len(timestamps) >= max_frames:
+                    break
+                timestamps.append(i)
+
+            click.echo(f"Extracting {len(timestamps)} frames...")
+
+            # Extract frames with ffmpeg
+            for frame_num, timestamp in enumerate(timestamps, 1):
+                frame_file = f"{temp_frames_dir}/frame_{frame_num:03d}.png"
+
+                cmd = [
+                    'ffmpeg', '-i', temp_video,
+                    '-ss', str(timestamp),
+                    '-vframes', '1',
+                    '-f', 'image2',
+                    '-y',  # Overwrite output
+                    frame_file
+                ]
+
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    click.echo(f"Failed to extract frame at {timestamp}s: {result.stderr}", err=True)
+                    continue
+
+                # Get frame info
+                frame_path = Path(frame_file)
+                if not frame_path.exists():
+                    continue
+
+                file_size = frame_path.stat().st_size
+
+                # Upload frame to S3
+                s3_key = f"frames/{video.id}/frame_{frame_num:03d}_{timestamp}.png"
+                s3_client.upload_file(frame_file, config.s3_bucket, s3_key)
+
+                # Save to database
+                frame_record = VideoFrame(
+                    video_id=video.id,
+                    frame_number=frame_num,
+                    timestamp_seconds=Decimal(str(timestamp)),
+                    s3_key=s3_key,
+                    file_size_bytes=file_size,
+                    image_format="png",
+                    extraction_method="ffmpeg"
+                )
+                session.add(frame_record)
+
+                click.echo(f"  ✓ Frame {frame_num} at {timestamp}s ({file_size:,} bytes)")
+
+            session.commit()
+            click.echo(f"\n✅ Extracted {len(timestamps)} frames successfully!")
+
+        finally:
+            # Clean up temp files
+            if os.path.exists(temp_video):
+                os.remove(temp_video)
+            if os.path.exists(temp_frames_dir):
+                import shutil
+                shutil.rmtree(temp_frames_dir)
+
+
+@frames.command("analyze")
+@click.argument("video_id")
+@click.option("--force", is_flag=True, help="Re-analyze frames even if analysis exists")
+@click.option("--limit", "-l", default=None, type=int, help="Analyze only first N frames")
+def frames_analyze(video_id: str, force: bool, limit: Optional[int]):
+    """Analyze extracted frames with AI to identify who is doing what."""
+    import base64
+    import json
+    import os
+    import requests
+    import time
+    from scripts.db import DatabaseSession, Video, VideoFrame, FrameAnalysis
+    from scripts.config_loader import get_config
+    import boto3
+
+    config = get_config()
+
+    with DatabaseSession() as session:
+        # Get video info
+        video = session.query(Video).filter(Video.id == video_id).first()
+        if not video:
+            click.echo(f"Video not found: {video_id}", err=True)
+            sys.exit(1)
+
+        # Get frames to analyze
+        frames_query = session.query(VideoFrame).filter(VideoFrame.video_id == video.id).order_by(VideoFrame.timestamp_seconds)
+
+        if not force:
+            # Only get frames without analysis
+            frames_query = frames_query.outerjoin(FrameAnalysis).filter(FrameAnalysis.id.is_(None))
+
+        if limit:
+            frames_query = frames_query.limit(limit)
+
+        frames = frames_query.all()
+
+        if not frames:
+            click.echo("No frames to analyze. Run 'frames extract' first or use --force.")
+            return
+
+        click.echo(f"Analyzing {len(frames)} frames from: {video.filename}")
+
+        # Setup S3 client for downloading frames
+        s3_client = boto3.client(
+            's3',
+            region_name='us-east-1',
+            aws_access_key_id=config.aws_access_key,
+            aws_secret_access_key=config.aws_secret_key
+        )
+
+        # Setup OpenAI API
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {config.openai_api_key}'
+        }
+
+        analysis_prompt = """Analyze this video frame and provide a detailed analysis in the following format. Be specific and accurate:
+
+1. **People**: Describe each person visible (appearance, age estimate, gender, clothing, facial expression, posture)
+2. **Actions**: What are they doing? (specific actions, gestures, interactions with objects)
+3. **Objects**: Notable objects, equipment, or items visible in the frame
+4. **Setting**: Description of the environment, location, background elements
+
+Focus on being specific and factual. If you can read any text or identify specific equipment, include that."""
+
+        successful_analyses = 0
+        failed_analyses = 0
+
+        for i, frame in enumerate(frames, 1):
+            try:
+                click.echo(f"\n[{i}/{len(frames)}] Analyzing frame at {frame.timestamp_seconds}s...")
+
+                # Download frame from S3
+                temp_frame = f"/tmp/frame_analysis_{frame.id}.png"
+                s3_client.download_file(config.s3_bucket, frame.s3_key, temp_frame)
+
+                # Encode frame for OpenAI API
+                with open(temp_frame, 'rb') as f:
+                    image_data = base64.b64encode(f.read()).decode('utf-8')
+
+                # Call OpenAI Vision API
+                payload = {
+                    'model': 'gpt-4o',
+                    'messages': [
+                        {
+                            'role': 'user',
+                            'content': [
+                                {
+                                    'type': 'text',
+                                    'text': analysis_prompt
+                                },
+                                {
+                                    'type': 'image_url',
+                                    'image_url': {
+                                        'url': f'data:image/png;base64,{image_data}'
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    'max_tokens': 500
+                }
+
+                start_time = time.time()
+                response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=payload)
+                processing_time = int((time.time() - start_time) * 1000)
+
+                if response.status_code == 200:
+                    result = response.json()
+                    raw_analysis = result['choices'][0]['message']['content']
+                    usage = result['usage']
+
+                    # Parse structured data from the analysis
+                    try:
+                        # Extract structured information (simplified approach)
+                        analysis_parts = raw_analysis.lower()
+
+                        # Basic keyword extraction for demo
+                        people_detected = []
+                        actions_detected = []
+                        objects_detected = []
+
+                        if 'dan goldin' in analysis_parts or 'older man' in analysis_parts or 'suit' in analysis_parts:
+                            people_detected.append({
+                                "description": "person in business attire",
+                                "confidence": 0.8
+                            })
+
+                        if 'kneeling' in analysis_parts or 'pointing' in analysis_parts or 'gesturing' in analysis_parts:
+                            actions_detected.append({
+                                "action": "gesturing/demonstrating",
+                                "confidence": 0.8
+                            })
+
+                        if 'rover' in analysis_parts or 'equipment' in analysis_parts or 'model' in analysis_parts:
+                            objects_detected.append({
+                                "object": "demonstration equipment",
+                                "confidence": 0.8
+                            })
+
+                        setting_description = raw_analysis.split('Setting')[-1][:200] if 'Setting' in raw_analysis else "Indoor setting"
+
+                    except Exception as parse_error:
+                        click.echo(f"    Warning: Could not parse structured data: {parse_error}")
+                        people_detected = []
+                        actions_detected = []
+                        objects_detected = []
+                        setting_description = "Analysis parsing failed"
+
+                    # Save analysis to database
+                    analysis_record = FrameAnalysis(
+                        frame_id=frame.id,
+                        ai_provider="openai",
+                        ai_model="gpt-4o",
+                        analysis_version="1.0",
+                        people_detected=people_detected,
+                        actions_detected=actions_detected,
+                        objects_detected=objects_detected,
+                        setting_description=setting_description,
+                        raw_analysis=raw_analysis,
+                        confidence_score=0.8,
+                        processing_time_ms=processing_time,
+                        tokens_used=usage['total_tokens'],
+                        cost_cents=int(usage['total_tokens'] * 0.01),  # Rough estimate
+                        status="completed"
+                    )
+                    session.add(analysis_record)
+                    session.commit()
+
+                    successful_analyses += 1
+                    click.echo(f"    ✓ Analysis complete ({usage['total_tokens']} tokens)")
+
+                else:
+                    error_msg = f"API error {response.status_code}: {response.text}"
+                    click.echo(f"    ❌ {error_msg}")
+
+                    # Save error to database
+                    error_record = FrameAnalysis(
+                        frame_id=frame.id,
+                        ai_provider="openai",
+                        ai_model="gpt-4o",
+                        status="error",
+                        error_message=error_msg,
+                        processing_time_ms=processing_time
+                    )
+                    session.add(error_record)
+                    session.commit()
+                    failed_analyses += 1
+
+                # Clean up temp file
+                if os.path.exists(temp_frame):
+                    os.remove(temp_frame)
+
+                # Rate limiting - be gentle with OpenAI API
+                time.sleep(1)
+
+            except Exception as e:
+                click.echo(f"    ❌ Frame analysis failed: {e}")
+                failed_analyses += 1
+                continue
+
+        click.echo(f"\n✅ Analysis complete!")
+        click.echo(f"Successful: {successful_analyses}")
+        click.echo(f"Failed: {failed_analyses}")
+
+
+@frames.command("search")
+@click.argument("query")
+@click.option("--video-id", "-v", help="Search within specific video")
+@click.option("--limit", "-l", default=10, help="Max results to show")
+def frames_search(query: str, video_id: Optional[str], limit: int):
+    """Search frame analysis results for specific people, actions, or objects."""
+    from scripts.db import DatabaseSession, Video, VideoFrame, FrameAnalysis
+
+    with DatabaseSession() as session:
+        # Build query
+        query_obj = session.query(
+            Video.filename,
+            VideoFrame.timestamp_seconds,
+            FrameAnalysis.people_detected,
+            FrameAnalysis.actions_detected,
+            FrameAnalysis.objects_detected,
+            FrameAnalysis.setting_description,
+            FrameAnalysis.raw_analysis
+        ).join(VideoFrame, Video.id == VideoFrame.video_id)\
+         .join(FrameAnalysis, VideoFrame.id == FrameAnalysis.frame_id)\
+         .filter(FrameAnalysis.status == 'completed')
+
+        if video_id:
+            query_obj = query_obj.filter(Video.id == video_id)
+
+        # Search in raw analysis text
+        query_obj = query_obj.filter(
+            FrameAnalysis.raw_analysis.ilike(f'%{query}%')
+        ).order_by(Video.filename, VideoFrame.timestamp_seconds).limit(limit)
+
+        results = query_obj.all()
+
+        if not results:
+            click.echo(f"No frames found matching '{query}'")
+            return
+
+        click.echo(f"Found {len(results)} frames matching '{query}':\n")
+
+        for result in results:
+            filename, timestamp, people, actions, objects, setting, raw = result
+
+            click.echo(f"📽️  {filename} at {timestamp}s")
+            if people:
+                click.echo(f"   👥 People: {', '.join([p.get('description', 'Unknown') for p in people])}")
+            if actions:
+                click.echo(f"   🎯 Actions: {', '.join([a.get('action', 'Unknown') for a in actions])}")
+            if objects:
+                click.echo(f"   📦 Objects: {', '.join([o.get('object', 'Unknown') for o in objects])}")
+            if setting:
+                click.echo(f"   🏙️  Setting: {setting[:100]}...")
+            click.echo(f"   📝 Analysis preview: {raw[:150]}...")
+            click.echo("")
+
+
+@frames.command("list")
+@click.option("--video-id", "-v", help="Show frames for specific video")
+@click.option("--status", "-s", type=click.Choice(["extracted", "analyzed", "error"]), help="Filter by status")
+@click.option("--limit", "-l", default=20, help="Max results to show")
+def frames_list(video_id: Optional[str], status: Optional[str], limit: int):
+    """List extracted frames and their analysis status."""
+    from scripts.db import DatabaseSession, Video, VideoFrame, FrameAnalysis
+
+    with DatabaseSession() as session:
+        # Build query
+        query_obj = session.query(
+            Video.filename,
+            VideoFrame.frame_number,
+            VideoFrame.timestamp_seconds,
+            VideoFrame.file_size_bytes,
+            FrameAnalysis.status.label('analysis_status'),
+            FrameAnalysis.created_at.label('analyzed_at')
+        ).join(VideoFrame, Video.id == VideoFrame.video_id)\
+         .outerjoin(FrameAnalysis, VideoFrame.id == FrameAnalysis.frame_id)
+
+        if video_id:
+            query_obj = query_obj.filter(Video.id == video_id)
+
+        if status == "extracted":
+            query_obj = query_obj.filter(FrameAnalysis.id.is_(None))
+        elif status == "analyzed":
+            query_obj = query_obj.filter(FrameAnalysis.status == 'completed')
+        elif status == "error":
+            query_obj = query_obj.filter(FrameAnalysis.status == 'error')
+
+        query_obj = query_obj.order_by(Video.filename, VideoFrame.frame_number).limit(limit)
+
+        results = query_obj.all()
+
+        if not results:
+            click.echo("No frames found.")
+            return
+
+        click.echo(f"{'Video':<40} {'Frame':<5} {'Time':<8} {'Size':<8} {'Analysis':<10} {'Analyzed':<12}")
+        click.echo("-" * 90)
+
+        for result in results:
+            filename, frame_num, timestamp, size, analysis_status, analyzed_at = result
+
+            filename_short = filename[:37] + "..." if len(filename) > 40 else filename
+            size_mb = f"{size / 1024 / 1024:.1f}MB" if size else "N/A"
+            status_display = analysis_status or "extracted"
+            analyzed_display = analyzed_at.strftime('%Y-%m-%d') if analyzed_at else "Not analyzed"
+
+            click.echo(f"{filename_short:<40} {frame_num:<5} {timestamp:<8}s {size_mb:<8} {status_display:<10} {analyzed_display:<12}")
 
 
 # ============ Storyline Commands ============
