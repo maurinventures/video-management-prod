@@ -22,6 +22,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import boto3
 from sqlalchemy import or_
 from scripts.db import DatabaseSession, Video, Transcript, TranscriptSegment, CompiledVideo, ScriptFeedback, Conversation, ChatMessage, User, AILog, Persona, Document, SocialPost, AudioRecording, AudioSegment, Project, ExternalContent, ExternalContentSegment
+from services.external_content_service import ExternalContentService
+from services.auth_service import AuthService
+from services.transcript_service import TranscriptService
+from services.video_service import VideoService
+from services.ai_service import AIService
 import time
 import hashlib
 import pyotp
@@ -461,276 +466,11 @@ def search_transcripts():
 # CHAT INTERFACE FOR SCRIPT GENERATION
 # ============================================================================
 
-def get_openai_client():
-    """Get OpenAI client."""
-    config = get_config()
-    api_key = config.secrets.get("openai", {}).get("api_key")
-    if not api_key:
-        raise ValueError("OpenAI API key not configured")
-    return OpenAI(api_key=api_key)
 
 
-def get_anthropic_client():
-    """Get Anthropic client."""
-    config = get_config()
-    api_key = config.secrets.get("anthropic", {}).get("api_key")
-    if not api_key:
-        raise ValueError("Anthropic API key not configured. Add your key to config/credentials.yaml")
-    return anthropic.Anthropic(api_key=api_key)
 
 
-# Model mapping
-MODEL_MAP = {
-    # Claude models
-    "claude-sonnet": "claude-sonnet-4-20250514",
-    "claude-opus": "claude-opus-4-0-20250514",
-    "claude-haiku": "claude-3-5-haiku-20241022",
-    # OpenAI models
-    "gpt-4o": "gpt-4o",
-    "gpt-4-turbo": "gpt-4-turbo",
-    "gpt-3.5-turbo": "gpt-3.5-turbo",
-}
 
-
-def log_ai_call(
-    request_type: str,
-    model: str,
-    prompt: str = None,
-    context_summary: str = None,
-    response: str = None,
-    clips_generated: int = 0,
-    response_json: dict = None,
-    success: bool = True,
-    error_message: str = None,
-    latency_ms: float = None,
-    input_tokens: int = None,
-    output_tokens: int = None,
-    user_id: str = None,
-    conversation_id: str = None
-):
-    """Log an AI API call for quality monitoring."""
-    try:
-        with DatabaseSession() as db_session:
-            log_entry = AILog(
-                request_type=request_type,
-                model=model,
-                prompt=prompt[:10000] if prompt else None,  # Truncate very long prompts
-                context_summary=context_summary[:5000] if context_summary else None,
-                response=response[:50000] if response else None,  # Keep full response for quality review
-                clips_generated=clips_generated,
-                response_json=response_json,
-                success=1 if success else 0,
-                error_message=error_message,
-                latency_ms=latency_ms,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                user_id=UUID(user_id) if user_id else None,
-                conversation_id=UUID(conversation_id) if conversation_id else None
-            )
-            db_session.add(log_entry)
-            db_session.commit()
-            print(f"[AI_LOG] {request_type} | model={model} | success={success} | latency={latency_ms:.0f}ms | clips={clips_generated}")
-    except Exception as e:
-        print(f"[AI_LOG ERROR] Failed to log AI call: {e}")
-
-
-def search_transcripts_for_context(query: str, limit: int = 1000):
-    """Search transcripts for relevant segments based on query keywords.
-
-    IMPROVED: Prioritizes rare/specific keywords over common words.
-    Results matching 'caterpillar' rank higher than those matching 'how'.
-    """
-    # Extract keywords from query - get meaningful words (3+ chars for better matching)
-    stop_words = {'want', 'need', 'like', 'make', 'create', 'find', 'give', 'about', 'from', 'with', 'that', 'this', 'have', 'will', 'would', 'could', 'should', 'video', 'script', 'clips', 'second', 'minute', 'the', 'and', 'for', 'how', 'know', 'talking', 'talk', 'good', 'great', 'thing', 'things', 'way', 'just', 'really', 'very', 'also', 'can', 'get', 'got', 'say', 'said', 'think', 'going', 'look', 'see', 'time', 'year', 'years', 'people', 'work', 'working'}
-    keywords = [w for w in re.findall(r'\b\w{3,}\b', query.lower()) if w not in stop_words]
-
-    # Remove duplicates while preserving order
-    keywords = list(dict.fromkeys(keywords))
-
-    # Debug: log keywords
-    print(f"[DEBUG] Search keywords: {keywords}")
-
-    # Extract year filters from query (e.g., "2020", "2023", "from 2020")
-    year_pattern = re.findall(r'\b(19\d{2}|20\d{2})\b', query)
-    min_year = None
-    if year_pattern:
-        min_year = min(int(y) for y in year_pattern)
-
-    # Check for "recent" or "latest" keywords
-    if any(w in query.lower() for w in ['recent', 'latest', 'new', 'newest']):
-        min_year = 2020
-
-    results = []
-    results_by_id = {}  # Track by segment_id to avoid duplicates and merge scores
-
-    with DatabaseSession() as db_session:
-        # Get all videos with their full metadata
-        videos = db_session.query(Video).all()
-        video_map = {str(v.id): {
-            'filename': v.filename,
-            'speaker': v.speaker or 'Unknown',
-            'event_name': v.event_name or 'Unknown',
-            'event_date': v.event_date,
-            'year': v.event_date.year if v.event_date else None
-        } for v in videos}
-
-        # Filter videos by year if specified - but be inclusive
-        # Include videos without dates to avoid missing content
-        if min_year:
-            filtered_video_ids = {
-                str(v.id) for v in videos
-                if (v.event_date and v.event_date.year >= min_year) or not v.event_date
-            }
-        else:
-            filtered_video_ids = set(video_map.keys())
-
-        # First pass: count how many results each keyword returns (to identify rare keywords)
-        keyword_counts = {}
-        for keyword in keywords[:15]:
-            count = db_session.query(TranscriptSegment).join(
-                Transcript, TranscriptSegment.transcript_id == Transcript.id
-            ).filter(
-                TranscriptSegment.text.ilike(f'%{keyword}%'),
-                Transcript.status == 'completed'
-            ).count()
-            keyword_counts[keyword] = count
-            print(f"[DEBUG] Keyword '{keyword}' has {count} matches")
-
-        # Calculate keyword weights - rare keywords get higher weight
-        # A keyword with 10 matches is more specific than one with 100
-        keyword_weights = {}
-        for kw, count in keyword_counts.items():
-            if count == 0:
-                keyword_weights[kw] = 0
-            elif count <= 5:
-                keyword_weights[kw] = 10  # Very specific - highest priority
-            elif count <= 20:
-                keyword_weights[kw] = 5   # Specific
-            elif count <= 50:
-                keyword_weights[kw] = 2   # Moderate
-            else:
-                keyword_weights[kw] = 1   # Common
-
-        print(f"[DEBUG] Keyword weights: {keyword_weights}")
-
-        # Search for matching segments with scoring
-        for keyword in keywords[:15]:
-            if keyword_counts.get(keyword, 0) == 0:
-                continue
-
-            segments = db_session.query(TranscriptSegment).join(
-                Transcript, TranscriptSegment.transcript_id == Transcript.id
-            ).filter(
-                TranscriptSegment.text.ilike(f'%{keyword}%'),
-                Transcript.status == 'completed'
-            ).limit(100).all()
-
-            for seg in segments:
-                transcript = db_session.query(Transcript).filter(
-                    Transcript.id == seg.transcript_id
-                ).first()
-                if transcript and str(transcript.video_id) in filtered_video_ids:
-                    video_info = video_map.get(str(transcript.video_id), {})
-                    event_date = video_info.get('event_date')
-                    date_str = event_date.strftime('%Y-%m-%d') if event_date else 'Unknown date'
-
-                    # Get surrounding segments for more complete context (30 seconds around match)
-                    nearby_segments = db_session.query(TranscriptSegment).filter(
-                        TranscriptSegment.transcript_id == seg.transcript_id,
-                        TranscriptSegment.start_time >= float(seg.start_time) - 15,
-                        TranscriptSegment.end_time <= float(seg.end_time) + 15
-                    ).order_by(TranscriptSegment.start_time).all()
-
-                    if nearby_segments:
-                        combined_text = ' '.join(s.text for s in nearby_segments)
-                        start_time = float(nearby_segments[0].start_time)
-                        end_time = float(nearby_segments[-1].end_time)
-                    else:
-                        combined_text = seg.text
-                        start_time = float(seg.start_time)
-                        end_time = float(seg.end_time)
-
-                    seg_key = str(seg.id)
-
-                    if seg_key in results_by_id:
-                        # Already have this segment - add to its score
-                        results_by_id[seg_key]['score'] += keyword_weights.get(keyword, 1)
-                        results_by_id[seg_key]['matched_keywords'].add(keyword)
-                    else:
-                        # New segment
-                        results_by_id[seg_key] = {
-                            'video_id': str(transcript.video_id),
-                            'video_title': video_info.get('filename', 'Unknown'),
-                            'speaker': video_info.get('speaker', 'Unknown'),
-                            'event_name': video_info.get('event_name', 'Unknown'),
-                            'event_date': date_str,
-                            'year': video_info.get('year'),
-                            'start': start_time,
-                            'end': end_time,
-                            'text': combined_text,
-                            'segment_id': seg_key,
-                            'score': keyword_weights.get(keyword, 1),
-                            'matched_keywords': {keyword}
-                        }
-
-        # Sort results by score (highest first) - rare keyword matches come first
-        results = sorted(results_by_id.values(), key=lambda x: -x['score'])
-
-        # Log top results
-        print(f"[DEBUG] Total unique results: {len(results)}")
-        if results:
-            top = results[0]
-            print(f"[DEBUG] Top result (score={top['score']}, keywords={top['matched_keywords']}): {top['text'][:80]}...")
-
-        # If no keyword matches, get a sample of transcripts (respecting year filter)
-        if not results:
-            transcripts = db_session.query(Transcript).filter(
-                Transcript.status == 'completed'
-            ).all()
-
-            # Filter by year
-            transcripts = [t for t in transcripts if str(t.video_id) in filtered_video_ids][:20]
-
-            for t in transcripts:
-                video_info = video_map.get(str(t.video_id), {})
-                event_date = video_info.get('event_date')
-                date_str = event_date.strftime('%Y-%m-%d') if event_date else 'Unknown date'
-
-                segments = db_session.query(TranscriptSegment).filter(
-                    TranscriptSegment.transcript_id == t.id
-                ).order_by(TranscriptSegment.start_time).limit(30).all()
-
-                for seg in segments:
-                    if len(seg.text) > 40:  # Only substantial segments
-                        results.append({
-                            'video_id': str(t.video_id),
-                            'video_title': video_info.get('filename', 'Unknown'),
-                            'speaker': video_info.get('speaker', 'Unknown'),
-                            'event_name': video_info.get('event_name', 'Unknown'),
-                            'event_date': date_str,
-                            'year': video_info.get('year'),
-                            'start': float(seg.start_time),
-                            'end': float(seg.end_time),
-                            'text': seg.text,
-                            'segment_id': str(seg.id)
-                        })
-
-    # Deduplicate and limit
-    seen = set()
-    unique_results = []
-    for r in results:
-        key = (r['video_id'], r['start'], r['end'])
-        if key not in seen:
-            seen.add(key)
-            unique_results.append(r)
-            if len(unique_results) >= limit:
-                break
-
-    print(f"[DEBUG] Total unique results: {len(unique_results)}")
-    if unique_results:
-        print(f"[DEBUG] Sample result: {unique_results[0]['text'][:100]}...")
-
-    return unique_results
 
 
 def search_audio_for_context(query: str, limit: int = 100):
@@ -957,488 +697,16 @@ def clean_clip_text(text: str) -> str:
     return text
 
 
-def reconstruct_script_with_verified_clips(ai_response: str, verified_clips: list) -> str:
-    """Rebuild the script using verified clip texts so script matches actual clips."""
-
-    # Extract title from AI response
-    title_match = re.search(r'\*\*\[(.*?)\]\*\*', ai_response)
-    title = title_match.group(1) if title_match else "Video Script"
-
-    # Extract all RECORD sections (narration to record)
-    records = re.findall(r'\[RECORD:\s*(.*?)\]', ai_response)
-    # Also try old format
-    if not records:
-        records = re.findall(r'\[NARRATE:\s*(.*?)\]', ai_response)
-
-    # Build new script with verified clips
-    script = f"**[{title}]**\n\n"
-
-    record_idx = 0
-
-    # Add opening narration if exists
-    if records and record_idx < len(records):
-        script += f"[RECORD: {records[record_idx]}]\n\n"
-        record_idx += 1
-
-    # Add each verified clip with narration bridges
-    for i, clip in enumerate(verified_clips):
-        # Use the ACTUAL verified text from the database, cleaned up
-        raw_text = clip.get('text', '').strip()
-        clip_text = clean_clip_text(raw_text)
-
-        # Store the cleaned text back for display consistency
-        clip['display_text'] = clip_text
-
-        # Get speaker info if available
-        speaker = clip.get('speaker', '')
-        if speaker and speaker != 'Unknown':
-            script += f'[VIDEO: "{clip_text}" — {speaker}]\n\n'
-        else:
-            script += f'[VIDEO: "{clip_text}"]\n\n'
-
-        # Add transition narration if available
-        if record_idx < len(records):
-            script += f"[RECORD: {records[record_idx]}]\n\n"
-            record_idx += 1
-
-    return script
 
 
-def generate_script_with_ai(user_message: str, transcript_context: list, conversation_history: list, model: str = "gpt-4o", exclude_clips: list = None, user_id: str = None, conversation_id: str = None):
-    """Generate a script using AI with verified transcript data."""
-
-    # Build summary of available content
-    speakers = set()
-    events = set()
-    years = set()
-    for t in transcript_context:
-        speakers.add(t.get('speaker', 'Unknown'))
-        events.add(t.get('event_name', 'Unknown'))
-        if t.get('year'):
-            years.add(t['year'])
-
-    summary = f"""AVAILABLE CONTENT SUMMARY:
-- Speakers: {', '.join(sorted(speakers))}
-- Events: {', '.join(sorted(events)[:10])}{'...' if len(events) > 10 else ''}
-- Years: {min(years) if years else 'N/A'} to {max(years) if years else 'N/A'}
-- Total clips available: {len(transcript_context)}
-"""
-
-    # Fetch good AND bad examples from database (few-shot learning)
-    examples_text = ""
-    try:
-        with DatabaseSession() as db_session:
-            # Good examples - learn from these
-            good_scripts = db_session.query(ScriptFeedback).filter(
-                ScriptFeedback.rating == 1
-            ).order_by(ScriptFeedback.created_at.desc()).limit(2).all()
-
-            if good_scripts:
-                examples_text = "\n\nHERE ARE EXAMPLES OF GOOD SCRIPTS (learn from this style):\n"
-                for i, ex in enumerate(good_scripts, 1):
-                    script_clean = ex.script.split('```json')[0].strip() if '```json' in ex.script else ex.script
-                    examples_text += f"\n--- GOOD EXAMPLE {i} ---\nUser asked: \"{ex.query}\"\nGood response:\n{script_clean[:1500]}...\n"
-
-            # Bad examples - AVOID these mistakes
-            bad_scripts = db_session.query(ScriptFeedback).filter(
-                ScriptFeedback.rating == -1
-            ).order_by(ScriptFeedback.created_at.desc()).limit(2).all()
-
-            if bad_scripts:
-                examples_text += "\n\nHERE ARE EXAMPLES OF BAD SCRIPTS (DO NOT make these mistakes):\n"
-                for i, ex in enumerate(bad_scripts, 1):
-                    script_clean = ex.script.split('```json')[0].strip() if '```json' in ex.script else ex.script
-                    examples_text += f"\n--- BAD EXAMPLE {i} (AVOID THIS) ---\nUser asked: \"{ex.query}\"\nBad response (DO NOT DO THIS):\n{script_clean[:1000]}...\n"
-    except Exception as e:
-        print(f"[DEBUG] Could not fetch examples: {e}")
-
-    # Build exclusion list from previously used clips
-    exclude_text = ""
-    if exclude_clips:
-        exclude_text = "\n\nCLIPS TO EXCLUDE (DO NOT USE THESE - already used in previous scripts):\n"
-        for clip in exclude_clips:
-            exclude_text += f"- video_id: {clip.get('video_id')} | {clip.get('start_time', 0):.1f}s-{clip.get('end_time', 0):.1f}s | \"{clip.get('text', '')[:80]}...\"\n"
-        exclude_text += "\nYou MUST use DIFFERENT clips than the ones listed above.\n"
-
-    # Build context from transcripts
-    # GPT-4o has 30k token limit, Claude has 200k - adjust accordingly
-    is_claude = model.startswith("claude")
-    max_segments = 300 if is_claude else 80  # Claude can handle more context
-    max_chars = 100000 if is_claude else 20000  # Rough char limits
-
-    context_text = ""
-    seen_passages = set()
-    total_chars = 0
-
-    for t in transcript_context[:max_segments]:
-        passage_key = (t['video_id'], round(t['start'], 0))
-        if passage_key in seen_passages:
-            continue
-        seen_passages.add(passage_key)
-
-        text = t["text"].strip()
-
-        # Only skip truly unusable segments (very short)
-        if len(text) < 15:
-            continue
-
-        # Check if we'd exceed character limit
-        entry = f"[{t.get('event_date', 'Unknown')} | {t.get('speaker', 'Unknown')}]\n"
-        entry += f"Video: {t['video_title']} | {t['start']:.1f}s-{t['end']:.1f}s | ID:{t['video_id']}\n"
-        entry += f'"{text}"\n\n'
-
-        if total_chars + len(entry) > max_chars:
-            break
-
-        context_text += entry
-        total_chars += len(entry)
-
-    system_prompt = f"""You are a video script creator. You have access to a database of transcript segments below.
-
-{summary}
-
-IMPORTANT RULES:
-1. ALWAYS create a script using the transcript data provided below - NEVER say you don't have access or ask for more data
-2. Copy video_id and timestamps EXACTLY from the data below
-3. Look for COMPLETE THOUGHTS - prefer quotes that start with capital letters and end with periods
-4. If a segment starts mid-sentence (with "and", "but", lowercase), look for a better starting point nearby
-5. NEVER USE THE SAME CLIP TWICE - each video_id + timestamp combination must be unique in your script. No duplicates!
-6. If user requests a SPECIFIC CLIP as the first clip (e.g., "The first clip should be..."), you MUST use that exact clip first. Search for it in the transcript data and use it verbatim.
-7. Mix clips from DIFFERENT recording sessions/videos when possible - avoid using consecutive clips from the same video unless necessary
-
-CRITICAL - [RECORD] NARRATION STYLE:
-- Write ALL [RECORD] sections in FIRST PERSON as if the speaker (e.g. Dan Goldin) is narrating their own story
-- Use "I", "my", "we" - NOT "he", "his", "Goldin said"
-- Example BAD: "Dan Goldin developed a philosophy about caterpillars..."
-- Example GOOD: "I developed a philosophy about spotting caterpillars..."
-- The [RECORD] should sound like the speaker reflecting on their own experiences
-
-CRITICAL - SMOOTH TRANSITIONS:
-- Each [RECORD] must lead DIRECTLY into what the [VIDEO] clip will say
-- Read the FIRST WORDS of the video clip and make the [RECORD] set them up
-- Example: If video starts "The caterpillars are ugly..." then [RECORD] should end with something like "...and I learned to see their true nature:"
-- NEVER write a [RECORD] that has no connection to the video clip that follows
-
-OUTPUT FORMAT:
-
-**[Title]**
-
-[RECORD: First-person opening - "I..." or "When I..."]
-
-[VIDEO: "Complete quote from transcript" | video_id | start-end]
-
-[RECORD: First-person bridge that leads into next clip]
-
-[VIDEO: "Complete quote from transcript" | video_id | start-end]
-
-[RECORD: First-person closing reflection]
-
-After script, provide JSON:
-```json
-{{"title": "...", "clips": [{{"video_id": "ID", "video_title": "TITLE", "start_time": 0.0, "end_time": 0.0, "text": "TEXT"}}]}}
-```
-
-FINDING GOOD CLIPS:
-- Look for segments that express complete ideas
-- Prefer quotes that would make sense to someone who hasn't seen the full video
-- If explaining a concept (like "frogs and caterpillars"), find the segments where it's DEFINED, not just mentioned
-- Combine multiple short segments if they form a complete thought
-{examples_text}
-{exclude_text}
----
-
-TRANSCRIPT DATA:
-""" + context_text
-
-    # Build messages
-    messages = [{"role": "system", "content": system_prompt}]
-
-    # Add conversation history (last 10 messages)
-    for msg in conversation_history[-10:]:
-        messages.append({"role": msg["role"], "content": msg["content"]})
-
-    messages.append({"role": "user", "content": user_message})
-
-    # Log the full prompt for debugging
-    import os
-    log_dir = os.path.join(os.path.dirname(__file__), 'logs')
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join(log_dir, 'ai_prompts.log')
-    with open(log_file, 'a') as f:
-        f.write(f"\n{'='*80}\n")
-        f.write(f"TIMESTAMP: {datetime.utcnow().isoformat()}\n")
-        f.write(f"MODEL: {model}\n")
-        f.write(f"USER MESSAGE: {user_message}\n")
-        f.write(f"EXCLUDE CLIPS: {exclude_clips}\n")
-        f.write(f"\n--- SYSTEM PROMPT (first 3000 chars) ---\n{system_prompt[:3000]}\n")
-        f.write(f"\n--- FULL SYSTEM PROMPT LENGTH: {len(system_prompt)} chars ---\n")
-
-    # Start timing for logging
-    start_time = time.time()
-    input_tokens = None
-    output_tokens = None
-
-    try:
-        # Determine which provider to use
-        actual_model = MODEL_MAP.get(model, model)
-        is_claude = model.startswith("claude")
-
-        if is_claude:
-            # Use Anthropic Claude
-            client = get_anthropic_client()
-            # Claude uses system prompt differently
-            response = client.messages.create(
-                model=actual_model,
-                max_tokens=4000,
-                system=system_prompt,
-                messages=[{"role": m["role"], "content": m["content"]} for m in messages[1:]]  # Skip system message
-            )
-            assistant_message = response.content[0].text
-            # Extract token usage from Claude response
-            if hasattr(response, 'usage'):
-                input_tokens = response.usage.input_tokens
-                output_tokens = response.usage.output_tokens
-        else:
-            # Use OpenAI
-            client = get_openai_client()
-            response = client.chat.completions.create(
-                model=actual_model,
-                messages=messages,
-                temperature=0.3,
-                max_tokens=2000,
-            )
-            assistant_message = response.choices[0].message.content
-            # Extract token usage from OpenAI response
-            if hasattr(response, 'usage'):
-                input_tokens = response.usage.prompt_tokens
-                output_tokens = response.usage.completion_tokens
-
-        # Log the AI response
-        with open(log_file, 'a') as f:
-            f.write(f"\n--- AI RESPONSE ---\n{assistant_message}\n")
-
-        # Try to extract JSON clips from response
-        clips = []
-        if "```json" in assistant_message:
-            try:
-                json_str = assistant_message.split("```json")[1].split("```")[0]
-                data = json.loads(json_str)
-                clips = data.get("clips", [])
-            except:
-                pass
-
-        # Log extracted clips
-        with open(log_file, 'a') as f:
-            f.write(f"\n--- EXTRACTED CLIPS ({len(clips)}) ---\n")
-            for i, c in enumerate(clips):
-                f.write(f"  {i+1}. video_id={c.get('video_id')} | {c.get('start_time')}-{c.get('end_time')} | {c.get('text', '')[:60]}...\n")
-
-        # Validate clips against database
-        if clips:
-            validated_clips = validate_clips_against_database(clips)
-        else:
-            validated_clips = []
-
-        # DEDUPLICATE: Remove clips that overlap with each other (same video, overlapping times)
-        if len(validated_clips) > 1:
-            deduped_clips = []
-            for clip in validated_clips:
-                is_duplicate = False
-                for existing in deduped_clips:
-                    # Same video?
-                    if clip.get('video_id') == existing.get('video_id'):
-                        # Check for time overlap
-                        clip_start = clip.get('start_time', 0)
-                        clip_end = clip.get('end_time', 0)
-                        exist_start = existing.get('start_time', 0)
-                        exist_end = existing.get('end_time', 0)
-                        # Overlap if: clip starts before existing ends AND clip ends after existing starts
-                        if clip_start < exist_end + 5 and clip_end > exist_start - 5:  # 5s tolerance
-                            is_duplicate = True
-                            with open(log_file, 'a') as f:
-                                f.write(f"  DUPLICATE REMOVED: {clip.get('video_id')} {clip_start}-{clip_end} overlaps with {exist_start}-{exist_end}\n")
-                            break
-                if not is_duplicate:
-                    deduped_clips.append(clip)
-            validated_clips = deduped_clips
-
-        # Log validated clips
-        with open(log_file, 'a') as f:
-            f.write(f"\n--- VALIDATED CLIPS ({len(validated_clips)}) ---\n")
-            for i, c in enumerate(validated_clips):
-                f.write(f"  {i+1}. video_id={c.get('video_id')} | {c.get('start_time')}-{c.get('end_time')} | {c.get('text', '')[:60]}...\n")
-            f.write(f"\n{'='*80}\n")
-
-        # RECONSTRUCT the script using verified clip texts
-        # This ensures the displayed script matches the actual clips
-        if validated_clips:
-            reconstructed = reconstruct_script_with_verified_clips(assistant_message, validated_clips)
-            # Update clip texts to match what's shown in the script
-            for clip in validated_clips:
-                if 'display_text' in clip:
-                    clip['text'] = clip['display_text']
-        else:
-            reconstructed = assistant_message
-
-        # Log successful AI call to database
-        latency_ms = (time.time() - start_time) * 1000
-        log_ai_call(
-            request_type="chat",
-            model=actual_model,
-            prompt=user_message,
-            context_summary=f"Speakers: {', '.join(sorted(speakers)[:5])}; Events: {', '.join(sorted(events)[:3])}; {len(transcript_context)} segments",
-            response=assistant_message,
-            clips_generated=len(validated_clips),
-            response_json={"clips": validated_clips} if validated_clips else None,
-            success=True,
-            latency_ms=latency_ms,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            user_id=user_id,
-            conversation_id=conversation_id
-        )
-
-        return {
-            "message": reconstructed,
-            "clips": validated_clips,
-            "has_script": len(validated_clips) > 0
-        }
-
-    except Exception as e:
-        # Log failed AI call to database
-        latency_ms = (time.time() - start_time) * 1000
-        log_ai_call(
-            request_type="chat",
-            model=MODEL_MAP.get(model, model),
-            prompt=user_message,
-            context_summary=f"{len(transcript_context)} segments",
-            success=False,
-            error_message=str(e),
-            latency_ms=latency_ms,
-            user_id=user_id,
-            conversation_id=conversation_id
-        )
-
-        return {
-            "message": f"Error generating response: {str(e)}",
-            "clips": [],
-            "has_script": False,
-            "error": True
-        }
 
 
 # ============================================================================
 # COPY GENERATION (LinkedIn posts, tweets, etc.)
 # ============================================================================
 
-def detect_copy_intent(message: str) -> dict:
-    """Detect if user wants copy generation vs video scripts.
-
-    Returns:
-        dict with keys:
-        - is_copy: bool - True if user wants copy generation
-        - persona_name: str or None - Name of persona mentioned
-        - platform: str or None - Target platform (linkedin, x, email, etc.)
-        - topic: str - The topic/subject matter
-    """
-    message_lower = message.lower()
-
-    # Platform indicators
-    platforms = {
-        'linkedin': ['linkedin', 'linked in', 'linkedin post'],
-        'x': ['tweet', 'x post', 'twitter'],
-        'email': ['email', 'e-mail'],
-        'blog': ['blog post', 'article'],
-        'press': ['press release'],
-    }
-
-    # Copy action indicators
-    copy_actions = ['write', 'draft', 'create', 'generate', 'compose', 'craft']
-    copy_types = ['post', 'tweet', 'email', 'article', 'copy', 'content', 'message', 'release']
-
-    # Check for copy intent
-    is_copy = False
-    detected_platform = None
-
-    # Check for platform mentions
-    for platform, keywords in platforms.items():
-        for kw in keywords:
-            if kw in message_lower:
-                is_copy = True
-                detected_platform = platform
-                break
-        if detected_platform:
-            break
-
-    # Check for copy action + type combinations
-    if not is_copy:
-        for action in copy_actions:
-            for ctype in copy_types:
-                if action in message_lower and ctype in message_lower:
-                    is_copy = True
-                    break
-            if is_copy:
-                break
-
-    # Check for persona mention
-    persona_name = None
-    with DatabaseSession() as db_session:
-        personas = db_session.query(Persona).filter(Persona.is_active == 1).all()
-        for p in personas:
-            if p.name.lower() in message_lower:
-                persona_name = p.name
-                break
-            # Also check first name
-            first_name = p.name.split()[0].lower()
-            if len(first_name) > 2 and first_name in message_lower:
-                persona_name = p.name
-                break
-
-    # If persona mentioned with "voice", "style", "as", it's likely copy
-    if persona_name:
-        voice_indicators = ["voice", "style", "as", "for", "like"]
-        for ind in voice_indicators:
-            if ind in message_lower:
-                is_copy = True
-                break
-
-    return {
-        'is_copy': is_copy,
-        'persona_name': persona_name,
-        'platform': detected_platform,
-        'topic': message  # Will be refined by the AI
-    }
 
 
-def detect_script_intent(message: str) -> bool:
-    """Detect if user wants video script generation.
-
-    Returns True if message indicates they want to create a video script.
-    """
-    message_lower = message.lower()
-
-    # Script action indicators
-    script_actions = ['create', 'make', 'generate', 'write', 'draft', 'build', 'compile']
-    script_types = ['script', 'video', 'compilation', 'edit', 'clip', 'footage']
-
-    # Check for script action + type combinations
-    for action in script_actions:
-        for stype in script_types:
-            if action in message_lower and stype in message_lower:
-                return True
-
-    # Check for explicit script requests
-    script_phrases = [
-        'video script', 'create a script', 'make a video',
-        'compile clips', 'video compilation', 'script about',
-        'using clips', 'from the transcripts', 'from the videos'
-    ]
-
-    for phrase in script_phrases:
-        if phrase in message_lower:
-            return True
-
-    return False
 
 
 def generate_general_response(user_message: str, conversation_history: list, model: str = "claude-sonnet", user_id: str = None, conversation_id: str = None):
@@ -1494,7 +762,7 @@ The user has access to a video management system with transcripts, but you shoul
 
         if is_claude:
             # Use Anthropic API for Claude models
-            client = get_anthropic_client()
+            client = AIService.get_anthropic_client()
 
             response = client.messages.create(
                 model=api_model,
@@ -1509,7 +777,7 @@ The user has access to a video management system with transcripts, but you shoul
 
         else:
             # Use OpenAI API for GPT models
-            client = get_openai_client()
+            client = AIService.get_openai_client()
 
             # Convert system prompt to OpenAI format
             openai_messages = [{"role": "system", "content": system_prompt}] + messages
@@ -1682,8 +950,8 @@ IMPORTANT:
 
     try:
         # Use Claude for copy generation (better at voice matching)
-        client = get_anthropic_client()
-        model_id = MODEL_MAP.get(model, "claude-sonnet-4-20250514")
+        client = AIService.get_anthropic_client()
+        model_id = AIService.MODEL_MAP.get(model, "claude-sonnet-4-20250514")
 
         response = client.messages.create(
             model=model_id,
@@ -1696,7 +964,7 @@ IMPORTANT:
         latency_ms = (time.time() - start_time) * 1000
 
         # Log the AI call
-        log_ai_call(
+        AIService.log_ai_call(
             request_type="copy_generation",
             model=model_id,
             prompt=user_message,
@@ -1719,7 +987,7 @@ IMPORTANT:
 
     except Exception as e:
         latency_ms = (time.time() - start_time) * 1000
-        log_ai_call(
+        AIService.log_ai_call(
             request_type="copy_generation",
             model=model,
             prompt=user_message,
@@ -2941,7 +2209,7 @@ def api_generate_conversation_title(conversation_id):
 
         # Generate title using Claude (fast, cheap)
         try:
-            client = anthropic.Anthropic()
+            client = AIService.get_anthropic_client()
             response = client.messages.create(
                 model="claude-3-5-haiku-20241022",
                 max_tokens=50,
@@ -3361,7 +2629,7 @@ Output format:
     # Search for relevant context
     search_query = feedback or original_clip.get('text', '')[:100]
     print(f"[DEBUG] Regenerate searching with query: '{search_query[:80]}...'")
-    context = search_transcripts_for_context(search_query)
+    context = TranscriptService.search_for_context(search_query)
 
     if not context:
         print("[DEBUG] Regenerate failed: No context found from search")
@@ -3370,7 +2638,7 @@ Output format:
     print(f"[DEBUG] Regenerate found {len(context)} context segments, generating with AI...")
 
     # Generate with AI
-    result = generate_script_with_ai(
+    result = AIService.generate_script_with_ai(
         regenerate_prompt, context, conversation_history, model=model,
         user_id=session.get('user_id'), conversation_id=conversation_id
     )
@@ -3475,7 +2743,7 @@ Output ONLY the new narration text, nothing else. Do not include quotes or any o
     actual_model = "claude-sonnet-4-20250514"
 
     try:
-        client = get_anthropic_client()
+        client = AIService.get_anthropic_client()
 
         response = client.messages.create(
             model=actual_model,
@@ -3491,7 +2759,7 @@ Output ONLY the new narration text, nothing else. Do not include quotes or any o
 
         # Log successful AI call
         latency_ms = (time.time() - start_time) * 1000
-        log_ai_call(
+        AIService.log_ai_call(
             request_type="regenerate_record",
             model=actual_model,
             prompt=regenerate_prompt,
@@ -3511,7 +2779,7 @@ Output ONLY the new narration text, nothing else. Do not include quotes or any o
     except Exception as e:
         # Log failed AI call
         latency_ms = (time.time() - start_time) * 1000
-        log_ai_call(
+        AIService.log_ai_call(
             request_type="regenerate_record",
             model=actual_model,
             prompt=regenerate_prompt,
@@ -3541,7 +2809,7 @@ def api_chat_test():
             return jsonify({'error': 'No message provided'}), 400
 
         # Call AI generation directly
-        result = generate_general_response(
+        result = AIService.generate_general_response(
             user_message=user_message,
             conversation_history=[],
             model=model,
@@ -3602,18 +2870,18 @@ def api_chat():
             model = 'gpt-4o'
 
         # Detect user intent
-        copy_intent = detect_copy_intent(user_message)
-        script_intent = detect_script_intent(user_message)
+        copy_intent = AIService.detect_copy_intent(user_message)
+        script_intent = AIService.detect_script_intent(user_message)
 
         # COPY GENERATION MODE
         if copy_intent['is_copy'] and copy_intent['persona_name']:
             # Search for relevant context for copy generation
-            context = search_transcripts_for_context(user_message)
+            context = TranscriptService.search_for_context(user_message)
             audio_context = search_audio_for_context(user_message, limit=50)
             # Use Claude for copy generation (better at voice matching)
             copy_model = 'claude-sonnet' if not model.startswith('claude') else model
 
-            result = generate_copy_with_ai(
+            result = AIService.generate_copy_with_ai(
                 user_message=user_message,
                 persona_name=copy_intent['persona_name'],
                 platform=copy_intent['platform'] or 'general',
@@ -3662,7 +2930,7 @@ def api_chat():
         # VIDEO SCRIPT MODE
         if script_intent:
             # Search for relevant transcript context
-            context = search_transcripts_for_context(user_message)
+            context = TranscriptService.search_for_context(user_message)
             audio_context = search_audio_for_context(user_message, limit=50)
 
             if not context:
@@ -3705,7 +2973,7 @@ def api_chat():
                 })
 
             # Generate response with AI (exclude previously used clips)
-            result = generate_script_with_ai(
+            result = AIService.generate_script_with_ai(
                 user_message, context, conversation_history, model=model, exclude_clips=previous_clips,
                 user_id=session.get('user_id'), conversation_id=conversation_id
             )
@@ -3754,7 +3022,7 @@ def api_chat():
 
         # GENERAL CHAT MODE (default)
         else:
-            result = generate_general_response(
+            result = AIService.generate_general_response(
                 user_message=user_message,
                 conversation_history=conversation_history,
                 model=model,
@@ -4134,110 +3402,43 @@ def api_clip_preview(video_id):
         return jsonify({'error': str(e)}), 500
 
 
-# @app.route('/api/clip-download/<video_id>')
+@app.route('/api/clip-download/<video_id>')
 def api_clip_download(video_id):
-    """Download a clip at original quality."""
-    import subprocess
-    import shutil
+    """Download a clip at original quality with optional metadata."""
+    # Authentication check
+    if 'user_id' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
 
     start_time = request.args.get('start', type=float, default=0)
     end_time = request.args.get('end', type=float, default=30)
-    duration = end_time - start_time
+    include_metadata = request.args.get('metadata', type=bool, default=True)
+    timeout = min(request.args.get('timeout', 300, type=int), 900)  # Max 15 minutes
 
     try:
-        with DatabaseSession() as db_session:
-            video = db_session.query(Video).filter(Video.id == UUID(video_id)).first()
-            if not video:
-                return jsonify({'error': 'Video not found'}), 404
+        result = VideoService.process_clip_download(
+            video_id=video_id,
+            user_id=session['user_id'],
+            start_time=start_time,
+            end_time=end_time,
+            include_metadata=include_metadata,
+            timeout=timeout
+        )
 
-            if not video.s3_key:
-                return jsonify({'error': 'Video not in S3'}), 404
-
-            config = get_config()
-            bucket = config.s3_bucket
-            s3_client = get_s3_client()
-
-            # Use home directory for cache (more space than /tmp)
-            cache_base = Path('/home/ec2-user/video_cache')
-            cache_base.mkdir(exist_ok=True)
-
-            # Download video to local cache first (ffmpeg crashes with S3 URLs)
-            videos_cache = cache_base / 'videos'
-            videos_cache.mkdir(exist_ok=True)
-            cached_video = videos_cache / f"{video_id}.mp4"
-
-            # Download if not cached or file is too small (incomplete download)
-            if not cached_video.exists() or cached_video.stat().st_size < 1000:
-                print(f"[DOWNLOAD] Downloading video {video_id}...")
-                import urllib.request
-                presigned_url = s3_client.generate_presigned_url(
-                    'get_object',
-                    Params={'Bucket': bucket, 'Key': video.s3_key},
-                    ExpiresIn=3600
-                )
-                urllib.request.urlretrieve(presigned_url, str(cached_video))
-                print(f"[DOWNLOAD] Downloaded {cached_video.stat().st_size} bytes")
-
-            # Output clips directory
-            clips_dir = cache_base / 'clips'
-            clips_dir.mkdir(exist_ok=True)
-
-            # Create output file
-            safe_name = re.sub(r'[^\w\-_ ]', '_', video.filename or 'clip')
-            safe_name = safe_name.replace('.mp4', '')
-            filename = f"{safe_name}_{start_time:.0f}s-{end_time:.0f}s.mp4"
-            output_path = clips_dir / f"{video_id}_{start_time:.0f}_{end_time:.0f}.mp4"
-
-            # Clean up old clips to save space (keep only last 50)
-            try:
-                existing_clips = sorted(clips_dir.glob('*.mp4'), key=lambda x: x.stat().st_mtime)
-                if len(existing_clips) > 50:
-                    for old_clip in existing_clips[:-50]:
-                        old_clip.unlink()
-            except:
-                pass
-
-            ffmpeg_path = shutil.which('ffmpeg') or '/usr/local/bin/ffmpeg'
-
-            # Extract clip from local file with QuickTime-compatible encoding
-            print(f"[DOWNLOAD] Extracting clip from {start_time}s to {end_time}s")
-            cmd = [
-                ffmpeg_path, '-y',
-                '-ss', str(start_time),
-                '-i', str(cached_video),
-                '-t', str(duration),
-                '-c:v', 'libx264',
-                '-profile:v', 'high',      # High profile for quality
-                '-level', '4.0',            # Level 4.0 for broad compatibility
-                '-pix_fmt', 'yuv420p',      # Required for QuickTime
-                '-preset', 'fast',
-                '-crf', '18',               # High quality
-                '-c:a', 'aac',
-                '-b:a', '192k',
-                '-ar', '48000',             # Standard audio sample rate
-                '-movflags', '+faststart',  # Enable streaming
-                str(output_path)
-            ]
-
-            result = subprocess.run(cmd, capture_output=True, timeout=300)
-
-            if result.returncode != 0:
-                error_msg = result.stderr.decode()[:500]
-                print(f"[DOWNLOAD] Encoding failed: {error_msg}")
-                return jsonify({'error': 'Failed to extract clip', 'details': error_msg}), 500
-
-            if not output_path.exists() or output_path.stat().st_size == 0:
-                return jsonify({'error': 'Output file is empty or missing'}), 500
-
-            print(f"[DOWNLOAD] Success: {output_path} ({output_path.stat().st_size} bytes)")
-
+        if include_metadata:
+            return jsonify(result)
+        else:
+            # Direct file download
             return send_file(
-                str(output_path),
-                mimetype='video/mp4',
+                result['file_path'],
+                mimetype=result['mimetype'],
                 as_attachment=True,
-                download_name=filename
+                download_name=result['filename']
             )
 
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'Video not found'}), 404
     except subprocess.TimeoutExpired:
         return jsonify({'error': 'Download timed out - clip may be too long'}), 500
     except Exception as e:
@@ -4246,35 +3447,44 @@ def api_clip_download(video_id):
         return jsonify({'error': str(e)}), 500
 
 
-# @app.route('/api/video-download/<video_id>')
+@app.route('/api/video-download/<video_id>')
 def api_video_download(video_id):
-    """Download the full video."""
+    """Download the full video with optional metadata."""
+    # Authentication check
+    if 'user_id' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+
+    include_metadata = request.args.get('metadata', type=bool, default=True)
+
     try:
-        with DatabaseSession() as db_session:
-            video = db_session.query(Video).filter(Video.id == UUID(video_id)).first()
-            if not video:
-                return jsonify({'error': 'Video not found'}), 404
+        result = VideoService.generate_download_url(video_id, session['user_id'])
 
-            if not video.s3_key:
-                return jsonify({'error': 'Video not in S3'}), 404
+        if include_metadata:
+            return jsonify(result)
+        else:
+            # Direct redirect to S3
+            return redirect(result['download_url'])
 
-            config = get_config()
-            bucket = config.s3_bucket
-            s3_client = get_s3_client()
+    except FileNotFoundError:
+        return jsonify({'error': 'Video not found'}), 404
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-            # Generate presigned URL for direct download
-            url = s3_client.generate_presigned_url(
-                'get_object',
-                Params={
-                    'Bucket': bucket,
-                    'Key': video.s3_key,
-                    'ResponseContentDisposition': f'attachment; filename="{video.filename}"'
-                },
-                ExpiresIn=3600
-            )
 
-            return redirect(url)
+@app.route('/api/video/<video_id>/download-options')
+def api_video_download_options(video_id):
+    """Get download options and metadata for a video without triggering download."""
+    # Authentication check
+    if 'user_id' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
 
+    try:
+        options = VideoService.get_download_options(video_id, session['user_id'])
+        return jsonify(options)
+    except FileNotFoundError:
+        return jsonify({'error': 'Video not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -4400,7 +3610,7 @@ def api_identify_speakers(transcript_id):
                 speaker_context += f"Other known speakers: {', '.join(known_speakers)}\n"
 
             # Use Claude to identify speakers
-            client = get_anthropic_client()
+            client = AIService.get_anthropic_client()
 
             prompt = f"""Analyze this transcript and identify different speakers. Look for:
 - Changes in speaking style or tone
@@ -4519,7 +3729,7 @@ def api_autofill_video(video_id):
             filename = video.filename or ''
 
             # Use Claude to analyze
-            client = get_anthropic_client()
+            client = AIService.get_anthropic_client()
 
             prompt = f"""Analyze this video transcript and extract metadata. The video filename is "{filename}".
 
@@ -4723,40 +3933,18 @@ def admin_invite():
 @app.route('/api/auth/me', methods=['GET'])
 def api_auth_me():
     """Get current authenticated user info."""
-    # DEMO MODE: Check for demo user session
-    if session.get('user_id') == 'demo-user-id':
-        return jsonify({
-            'user': {
-                'id': 'demo-user-id',
-                'email': 'joy@maurinventures.com',
-                'name': 'Joy',
-                'email_verified': True
-            }
-        })
-
-    # Check if user_id exists in session
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
 
-    with DatabaseSession() as db_session:
-        user = db_session.query(User).filter(User.id == session['user_id']).first()
-        if not user:
-            session.clear()
-            return jsonify({'error': 'User not found'}), 401
+    is_demo = user_id == AuthService.DEMO_USER_ID
+    user = AuthService.get_user_by_id(user_id, is_demo)
 
-        return jsonify({
-            'user': {
-                'id': str(user.id),
-                'name': user.name,
-                'email': user.email,
-                'is_active': bool(user.is_active),
-                'email_verified': bool(user.email_verified),
-                'totp_enabled': bool(user.totp_enabled),
-                'created_at': user.created_at.isoformat(),
-                'last_login': user.last_login.isoformat() if user.last_login else None,
-            }
-        })
+    if not user:
+        session.clear()
+        return jsonify({'error': 'User not found'}), 401
+
+    return jsonify({'user': user})
 
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -4764,66 +3952,36 @@ def api_auth_login():
     """API login endpoint that handles 2FA flow."""
     try:
         data = request.json or {}
-        email = data.get('email', '').strip().lower()
+        email = data.get('email', '')
         password = data.get('password', '')
 
-        if not email or not password:
-            return jsonify({'success': False, 'error': 'Email and password required'}), 400
+        result = AuthService.authenticate_user(email, password)
 
-        # DEMO MODE: Allow joy@maurinventures.com to login without database
-        if email == 'joy@maurinventures.com' and len(password) >= 8:
-            session['user_id'] = 'demo-user-id'
+        if not result['success']:
+            return jsonify(result), 401
+
+        # Handle demo mode
+        if result.get('is_demo'):
+            session['user_id'] = AuthService.DEMO_USER_ID
             session['user_email'] = email
-            return jsonify({
-                'success': True,
-                'user': {
-                    'id': 'demo-user-id',
-                    'email': email,
-                    'name': 'Joy',
-                    'email_verified': True
-                }
-            })
+            return jsonify(result)
 
-        # Try database authentication for other users
+        # Handle 2FA flow
+        if result.get('requires_2fa'):
+            session['pending_2fa_user_id'] = result['user_id']
+            session['pending_2fa_email'] = result['user']['email']
+            return jsonify(result)
 
-        with DatabaseSession() as db_session:
-            user = db_session.query(User).filter(User.email == email).first()
-            if not user:
-                return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        if result.get('requires_2fa_setup'):
+            session['pending_2fa_setup_user_id'] = result['user_id']
+            session['pending_2fa_setup_email'] = result['user']['email']
+            session['pending_2fa_setup_name'] = result['user']['name']
+            return jsonify(result)
 
-            # Check password
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
-            if user.password_hash != password_hash:
-                return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        return jsonify(result)
 
-            if not user.is_active:
-                return jsonify({'success': False, 'error': 'Account is disabled'}), 401
-
-            # Check if email is verified
-            if not user.email_verified:
-                return jsonify({'success': False, 'error': 'Please verify your email first. Check your inbox for the verification link.'}), 401
-
-            # Check if 2FA is enabled
-            if user.totp_enabled == 1 and user.totp_secret:
-                # Store pending auth in session
-                session['pending_2fa_user_id'] = str(user.id)
-                session['pending_2fa_email'] = user.email
-                return jsonify({
-                    'success': True,
-                    'requires_2fa': True,
-                    'user_id': str(user.id)
-                })
-
-            # 2FA not set up - force setup (mandatory for all users)
-            session['pending_2fa_setup_user_id'] = str(user.id)
-            session['pending_2fa_setup_email'] = user.email
-            session['pending_2fa_setup_name'] = user.name
-            return jsonify({
-                'success': True,
-                'requires_2fa_setup': True,
-                'user_id': str(user.id)
-            })
-
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         print(f"Login error: {e}")
         return jsonify({'success': False, 'error': 'Login failed'}), 500
@@ -4838,52 +3996,23 @@ def api_auth_verify_2fa():
 
         data = request.json or {}
         token = data.get('token', '').strip()
+        user_id = session['pending_2fa_user_id']
 
-        if not token:
-            return jsonify({'success': False, 'error': 'Token is required'}), 400
+        result = AuthService.verify_2fa_token(user_id, token)
 
-        with DatabaseSession() as db_session:
-            user = db_session.query(User).filter(
-                User.id == session['pending_2fa_user_id']
-            ).first()
+        if result['success']:
+            # Set up persistent session (7 days)
+            session.permanent = True
+            session['user_id'] = user_id
+            session['user_name'] = result['user']['name']
+            session['user_email'] = result['user']['email']
+            session.pop('pending_2fa_user_id', None)
+            session.pop('pending_2fa_email', None)
 
-            if not user or not user.totp_secret:
-                session.pop('pending_2fa_user_id', None)
-                session.pop('pending_2fa_email', None)
-                return jsonify({'success': False, 'error': 'Invalid verification state'}), 400
+        return jsonify(result), 200 if result['success'] else 401
 
-            # Verify TOTP code
-            import pyotp
-            totp = pyotp.TOTP(user.totp_secret)
-            if totp.verify(token, valid_window=1):
-                # 2FA verified - complete login
-                user.last_login = datetime.utcnow()
-                db_session.commit()
-
-                # Set up persistent session (7 days)
-                session.permanent = True
-                session['user_id'] = str(user.id)
-                session['user_name'] = user.name
-                session['user_email'] = user.email
-                session.pop('pending_2fa_user_id', None)
-                session.pop('pending_2fa_email', None)
-
-                return jsonify({
-                    'success': True,
-                    'user': {
-                        'id': str(user.id),
-                        'name': user.name,
-                        'email': user.email,
-                        'is_active': bool(user.is_active),
-                        'email_verified': bool(user.email_verified),
-                        'totp_enabled': bool(user.totp_enabled),
-                        'created_at': user.created_at.isoformat(),
-                        'last_login': user.last_login.isoformat() if user.last_login else None,
-                    }
-                })
-            else:
-                return jsonify({'success': False, 'error': 'Invalid code. Please try again.'}), 401
-
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         print(f"2FA verification error: {e}")
         return jsonify({'success': False, 'error': '2FA verification failed'}), 500
@@ -4893,103 +4022,54 @@ def api_auth_verify_2fa():
 def api_auth_setup_2fa():
     """Set up 2FA - generate QR code or verify setup code."""
     try:
-        import pyotp
-        import qrcode
-        import io
-        import base64
-
-        # Check if this is initial setup or verification
         data = request.json or {}
         token = data.get('token')
 
-        # For initial setup (no token provided)
+        # For initial setup (no token provided) - generate QR code
         if not token:
             if 'pending_2fa_setup_user_id' not in session:
                 return jsonify({'success': False, 'error': 'No pending 2FA setup'}), 400
 
-            with DatabaseSession() as db_session:
-                user = db_session.query(User).filter(
-                    User.id == session['pending_2fa_setup_user_id']
-                ).first()
+            qr_data = AuthService.setup_2fa_secret()
 
-                if not user:
-                    return jsonify({'success': False, 'error': 'User not found'}), 400
+            # Store secret temporarily in session for verification
+            session['pending_2fa_secret'] = qr_data['secret']
 
-                # Generate new secret if not exists
-                if not user.totp_secret:
-                    secret = pyotp.random_base32()
-                    user.totp_secret = secret
-                    db_session.commit()
-                else:
-                    secret = user.totp_secret
+            return jsonify({
+                'success': True,
+                'qr_code': qr_data['qr_code'],
+                'secret': qr_data['secret']
+            })
 
-                # Generate QR code
-                totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
-                    user.email,
-                    issuer_name="Internal Platform"
-                )
-
-                qr = qrcode.QRCode(version=1, box_size=10, border=5)
-                qr.add_data(totp_uri)
-                qr.make(fit=True)
-
-                img = qr.make_image(fill_color="black", back_color="white")
-                buffered = io.BytesIO()
-                img.save(buffered, format="PNG")
-                qr_code_b64 = base64.b64encode(buffered.getvalue()).decode()
-
-                return jsonify({
-                    'success': True,
-                    'qr_code': qr_code_b64,
-                    'secret': secret
-                })
-
-        # For verification (token provided)
+        # For verification (token provided) - complete setup
         else:
-            if 'pending_2fa_setup_user_id' not in session:
+            if 'pending_2fa_setup_user_id' not in session or 'pending_2fa_secret' not in session:
                 return jsonify({'success': False, 'error': 'No pending 2FA setup'}), 400
 
-            with DatabaseSession() as db_session:
-                user = db_session.query(User).filter(
-                    User.id == session['pending_2fa_setup_user_id']
-                ).first()
+            user_id = session['pending_2fa_setup_user_id']
+            secret = session['pending_2fa_secret']
 
-                if not user or not user.totp_secret:
-                    return jsonify({'success': False, 'error': 'Invalid setup state'}), 400
+            result = AuthService.complete_2fa_setup(user_id, secret, token)
 
-                # Verify token
-                totp = pyotp.TOTP(user.totp_secret)
-                if totp.verify(token, valid_window=1):
-                    # Enable 2FA
-                    user.totp_enabled = 1
-                    user.last_login = datetime.utcnow()
-                    db_session.commit()
+            if result['success']:
+                # Complete login and clear session data
+                session.permanent = True
+                session['user_id'] = user_id
+                session['user_name'] = session.get('pending_2fa_setup_name')
+                session['user_email'] = session.get('pending_2fa_setup_email')
+                session.pop('pending_2fa_setup_user_id', None)
+                session.pop('pending_2fa_setup_email', None)
+                session.pop('pending_2fa_setup_name', None)
+                session.pop('pending_2fa_secret', None)
 
-                    # Complete login
-                    session.permanent = True
-                    session['user_id'] = str(user.id)
-                    session['user_name'] = user.name
-                    session['user_email'] = user.email
-                    session.pop('pending_2fa_setup_user_id', None)
-                    session.pop('pending_2fa_setup_email', None)
-                    session.pop('pending_2fa_setup_name', None)
+                # Get updated user data
+                user = AuthService.get_user_by_id(user_id)
+                result['user'] = user
 
-                    return jsonify({
-                        'success': True,
-                        'user': {
-                            'id': str(user.id),
-                            'name': user.name,
-                            'email': user.email,
-                            'is_active': bool(user.is_active),
-                            'email_verified': bool(user.email_verified),
-                            'totp_enabled': bool(user.totp_enabled),
-                            'created_at': user.created_at.isoformat(),
-                            'last_login': user.last_login.isoformat() if user.last_login else None,
-                        }
-                    })
-                else:
-                    return jsonify({'success': False, 'error': 'Invalid code. Please try again.'}), 401
+            return jsonify(result), 200 if result['success'] else 401
 
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         print(f"2FA setup error: {e}")
         return jsonify({'success': False, 'error': '2FA setup failed'}), 500
@@ -5110,87 +4190,15 @@ def api_auth_register():
     """Register new user with email verification."""
     try:
         data = request.json or {}
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip().lower()
+        name = data.get('name', '')
+        email = data.get('email', '')
         password = data.get('password', '')
 
-        if not name or not email or not password:
-            return jsonify({'success': False, 'error': 'Name, email, and password are required'}), 400
+        result = AuthService.register_user(name, email, password)
+        return jsonify(result), 200 if result['success'] else 400
 
-        # Validate email format
-        import re
-        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-            return jsonify({'success': False, 'error': 'Invalid email format'}), 400
-
-        # Validate password strength
-        if len(password) < 8:
-            return jsonify({'success': False, 'error': 'Password must be at least 8 characters long'}), 400
-
-        # DEMO MODE: Allow joy@maurinventures.com to register without database
-        if email == 'joy@maurinventures.com':
-            return jsonify({
-                'success': True,
-                'user': {
-                    'id': 'demo-user-id',
-                    'email': email,
-                    'name': name,
-                    'email_verified': True
-                }
-            })
-
-        # Try database registration for other users
-
-        with DatabaseSession() as db_session:
-            # Check if email already exists
-            existing = db_session.query(User).filter(User.email == email).first()
-            if existing:
-                return jsonify({'success': False, 'error': 'Email already registered'}), 400
-
-            # Generate verification token
-            verification_token = secrets.token_urlsafe(32)
-            expires_at = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiry
-
-            # Create user
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
-            user = User(
-                email=email,
-                name=name,
-                password_hash=password_hash,
-                is_active=1,
-                email_verified=1,  # TEMP: Skip email verification for development
-                totp_enabled=0,    # Will be set up after email verification
-                verification_token=verification_token,
-                verification_token_expires=expires_at
-            )
-            db_session.add(user)
-            db_session.commit()
-
-            # TEMP: Skip email verification for development
-            # if send_verification_email(email, name, verification_token):
-            #     return jsonify({
-            #         'success': True,
-            #         'requires_email_verification': True,
-
-            # Return success without email verification
-            return jsonify({
-                'success': True,
-                'user': {
-                    'id': str(user.id),
-                    'email': user.email,
-                    'name': user.name,
-                    'email_verified': bool(user.email_verified)
-                }
-            })
-
-            # Old code below commented out
-            # else:
-            #     return jsonify({
-            #         'success': True,
-            #         'requires_email_verification': True,
-            #         'message': 'Registration successful, but email sending failed. Contact support.',
-            #         'verification_token': verification_token  # For debugging only
-            #     })
-
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         print(f"Registration error: {e}")
         return jsonify({'success': False, 'error': 'Registration failed'}), 500
@@ -5246,25 +4254,8 @@ def api_auth_verify_email():
         if not token:
             return jsonify({'success': False, 'error': 'Verification token is required'}), 400
 
-        with DatabaseSession() as db_session:
-            user = db_session.query(User).filter(
-                User.verification_token == token,
-                User.verification_token_expires > datetime.utcnow()
-            ).first()
-
-            if not user:
-                return jsonify({'success': False, 'error': 'Invalid or expired verification token'}), 400
-
-            # Verify email
-            user.email_verified = 1
-            user.verification_token = None
-            user.verification_token_expires = None
-            db_session.commit()
-
-            return jsonify({
-                'success': True,
-                'message': 'Email verified successfully. Please set up two-factor authentication.'
-            })
+        result = AuthService.verify_email(token)
+        return jsonify(result), 200 if result['success'] else 400
 
     except Exception as e:
         print(f"Email verification error: {e}")
@@ -5275,38 +4266,14 @@ def api_auth_verify_email():
 def api_auth_resend_verification():
     """Resend email verification."""
     try:
-        # This would typically use the email from session, but for API we might need to accept email in request
         data = request.json or {}
-        email = data.get('email', '').strip().lower()
+        email = data.get('email', '')
 
         if not email:
             return jsonify({'success': False, 'error': 'Email is required'}), 400
 
-        with DatabaseSession() as db_session:
-            user = db_session.query(User).filter(
-                User.email == email,
-                User.email_verified == 0
-            ).first()
-
-            if not user:
-                return jsonify({'success': False, 'error': 'Email not found or already verified'}), 400
-
-            # Generate new verification token
-            verification_token = secrets.token_urlsafe(32)
-            expires_at = datetime.utcnow() + timedelta(hours=24)
-
-            user.verification_token = verification_token
-            user.verification_token_expires = expires_at
-            db_session.commit()
-
-            # Send verification email
-            if send_verification_email(email, user.name, verification_token):
-                return jsonify({
-                    'success': True,
-                    'message': 'Verification email sent successfully.'
-                })
-            else:
-                return jsonify({'success': False, 'error': 'Failed to send verification email'}), 500
+        result = AuthService.resend_verification_email(email)
+        return jsonify(result), 200 if result['success'] else 400
 
     except Exception as e:
         print(f"Resend verification error: {e}")
@@ -5396,38 +4363,14 @@ def api_list_external_content():
     search_query = request.args.get('q', '').strip()
     content_type = request.args.get('type', '').strip()
 
-    with DatabaseSession() as db_session:
-        query = db_session.query(ExternalContent)
-
-        if search_query:
-            query = query.filter(
-                or_(
-                    ExternalContent.title.ilike(f'%{search_query}%'),
-                    ExternalContent.description.ilike(f'%{search_query}%'),
-                    ExternalContent.author.ilike(f'%{search_query}%')
-                )
-            )
-
-        if content_type:
-            query = query.filter(ExternalContent.content_type == content_type)
-
-        items = query.order_by(ExternalContent.created_at.desc()).limit(100).all()
-
-        return jsonify([{
-            'id': str(item.id),
-            'title': item.title,
-            'content_type': item.content_type,
-            'description': item.description,
-            'source_url': item.source_url,
-            'author': item.author,
-            'content_date': item.content_date.isoformat() if item.content_date else None,
-            'tags': item.tags or [],
-            'word_count': item.word_count,
-            'duration_seconds': float(item.duration_seconds) if item.duration_seconds else None,
-            'status': item.status,
-            'created_at': item.created_at.isoformat(),
-            'created_by': str(item.created_by) if item.created_by else None
-        } for item in items])
+    try:
+        items = ExternalContentService.list_content(
+            search_query=search_query,
+            content_type=content_type
+        )
+        return jsonify(items)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/external-content', methods=['POST'])
@@ -5439,26 +4382,11 @@ def api_create_external_content():
         return jsonify({'error': 'Title and content_type are required'}), 400
 
     try:
-        with DatabaseSession() as db_session:
-            item = ExternalContent(
-                title=data['title'],
-                content_type=data['content_type'],
-                description=data.get('description', ''),
-                source_url=data.get('source_url', ''),
-                author=data.get('author', ''),
-                content_date=datetime.strptime(data['content_date'], '%Y-%m-%d').date() if data.get('content_date') else None,
-                tags=data.get('tags', []),
-                extra_data=data.get('extra_data', {}),
-                created_by=UUID(session['user_id']) if session.get('user_id') and session.get('user_id') != 'demo-user-id' else None
-            )
-            db_session.add(item)
-            db_session.commit()
-
-            return jsonify({
-                'success': True,
-                'id': str(item.id),
-                'message': f'{data["content_type"].title()} created successfully'
-            })
+        user_id = session.get('user_id')
+        result = ExternalContentService.create_content(data, user_id)
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -5467,74 +4395,12 @@ def api_create_external_content():
 def api_get_external_content(content_id):
     """Get single external content item with full details."""
     try:
-        with DatabaseSession() as db_session:
-            item = db_session.query(ExternalContent).filter(
-                ExternalContent.id == UUID(content_id)
-            ).first()
-
-            if not item:
-                return jsonify({'error': 'Content not found'}), 404
-
-            # Generate presigned URL if S3 file exists
-            preview_url = None
-            download_url = None
-            if item.s3_key:
-                s3_client = get_s3_client()
-                config = get_config()
-                bucket = item.s3_bucket or config.s3_bucket
-
-                # Preview URL (1 hour expiry)
-                preview_url = s3_client.generate_presigned_url(
-                    'get_object',
-                    Params={'Bucket': bucket, 'Key': item.s3_key},
-                    ExpiresIn=3600
-                )
-
-                # Download URL with original filename
-                download_url = s3_client.generate_presigned_url(
-                    'get_object',
-                    Params={
-                        'Bucket': bucket,
-                        'Key': item.s3_key,
-                        'ResponseContentDisposition': f'attachment; filename="{item.original_filename or item.title}"'
-                    },
-                    ExpiresIn=3600
-                )
-
-            # Get segments count
-            segments_count = db_session.query(ExternalContentSegment).filter(
-                ExternalContentSegment.content_id == item.id
-            ).count()
-
-            return jsonify({
-                'id': str(item.id),
-                'title': item.title,
-                'content_type': item.content_type,
-                'description': item.description,
-                'source_url': item.source_url,
-                'original_filename': item.original_filename,
-                'file_size_bytes': item.file_size_bytes,
-                'file_format': item.file_format,
-                'content_text': item.content_text,
-                'content_summary': item.content_summary,
-                'word_count': item.word_count,
-                'duration_seconds': float(item.duration_seconds) if item.duration_seconds else None,
-                'author': item.author,
-                'content_date': item.content_date.isoformat() if item.content_date else None,
-                'tags': item.tags or [],
-                'keywords': item.keywords or [],
-                'extra_data': item.extra_data or {},
-                'status': item.status,
-                'processing_notes': item.processing_notes,
-                'segments_count': segments_count,
-                'preview_url': preview_url,
-                'download_url': download_url,
-                'created_at': item.created_at.isoformat(),
-                'updated_at': item.updated_at.isoformat(),
-                'created_by': str(item.created_by) if item.created_by else None
-            })
+        content = ExternalContentService.get_content_with_urls(content_id)
+        return jsonify(content)
     except ValueError:
         return jsonify({'error': 'Invalid content ID'}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'Content not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -5545,42 +4411,12 @@ def api_update_external_content(content_id):
     data = request.json
 
     try:
-        with DatabaseSession() as db_session:
-            item = db_session.query(ExternalContent).filter(
-                ExternalContent.id == UUID(content_id)
-            ).first()
-
-            if not item:
-                return jsonify({'error': 'Content not found'}), 404
-
-            # Update fields if provided
-            if 'title' in data:
-                item.title = data['title']
-            if 'description' in data:
-                item.description = data['description']
-            if 'author' in data:
-                item.author = data['author']
-            if 'content_date' in data and data['content_date']:
-                item.content_date = datetime.strptime(data['content_date'], '%Y-%m-%d').date()
-            if 'tags' in data:
-                item.tags = data['tags']
-            if 'status' in data:
-                item.status = data['status']
-            if 'processing_notes' in data:
-                item.processing_notes = data['processing_notes']
-
-            # Update extra_data with custom fields
-            if 'extra_data' in data:
-                extra = item.extra_data or {}
-                extra.update(data['extra_data'])
-                item.extra_data = extra
-
-            item.updated_at = datetime.utcnow()
-            db_session.commit()
-
-            return jsonify({'success': True, 'message': 'Content updated successfully'})
+        result = ExternalContentService.update_content(content_id, data)
+        return jsonify(result)
     except ValueError:
         return jsonify({'error': 'Invalid content ID'}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'Content not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -5589,38 +4425,12 @@ def api_update_external_content(content_id):
 def api_delete_external_content(content_id):
     """Delete external content and associated files."""
     try:
-        with DatabaseSession() as db_session:
-            item = db_session.query(ExternalContent).filter(
-                ExternalContent.id == UUID(content_id)
-            ).first()
-
-            if not item:
-                return jsonify({'error': 'Content not found'}), 404
-
-            # Delete from S3 if file exists
-            if item.s3_key:
-                try:
-                    s3_client = get_s3_client()
-                    config = get_config()
-                    bucket = item.s3_bucket or config.s3_bucket
-                    s3_client.delete_object(Bucket=bucket, Key=item.s3_key)
-                except Exception as e:
-                    print(f"Error deleting S3 file {item.s3_key}: {e}")
-
-            # Delete thumbnail if exists
-            if item.thumbnail_s3_key:
-                try:
-                    s3_client.delete_object(Bucket=bucket, Key=item.thumbnail_s3_key)
-                except Exception as e:
-                    print(f"Error deleting S3 thumbnail {item.thumbnail_s3_key}: {e}")
-
-            # Delete from database (segments cascade automatically)
-            db_session.delete(item)
-            db_session.commit()
-
-            return jsonify({'success': True, 'message': 'Content deleted successfully'})
+        result = ExternalContentService.delete_content(content_id)
+        return jsonify(result)
     except ValueError:
         return jsonify({'error': 'Invalid content ID'}), 400
+    except FileNotFoundError:
+        return jsonify({'error': 'Content not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -5629,24 +4439,8 @@ def api_delete_external_content(content_id):
 def api_get_external_content_segments(content_id):
     """Get all segments for external content."""
     try:
-        with DatabaseSession() as db_session:
-            segments = db_session.query(ExternalContentSegment).filter(
-                ExternalContentSegment.content_id == UUID(content_id)
-            ).order_by(ExternalContentSegment.segment_index).all()
-
-            return jsonify([{
-                'id': str(seg.id),
-                'segment_index': seg.segment_index,
-                'section_title': seg.section_title,
-                'start_time': float(seg.start_time) if seg.start_time else None,
-                'end_time': float(seg.end_time) if seg.end_time else None,
-                'start_position': seg.start_position,
-                'end_position': seg.end_position,
-                'text': seg.text,
-                'speaker': seg.speaker,
-                'confidence': float(seg.confidence) if seg.confidence else None,
-                'created_at': seg.created_at.isoformat()
-            } for seg in segments])
+        segments = ExternalContentService.get_content_segments(content_id)
+        return jsonify(segments)
     except ValueError:
         return jsonify({'error': 'Invalid content ID'}), 400
     except Exception as e:
@@ -5664,87 +4458,17 @@ def api_upload_external_content():
         return jsonify({'error': 'No file selected'}), 400
 
     # Get metadata from form
-    title = request.form.get('title', file.filename)
-    content_type = request.form.get('content_type', 'other')
-    description = request.form.get('description', '')
-    author = request.form.get('author', '')
+    metadata = {
+        'title': request.form.get('title', file.filename),
+        'content_type': request.form.get('content_type', 'other'),
+        'description': request.form.get('description', ''),
+        'author': request.form.get('author', '')
+    }
 
     try:
-        # Generate unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-
-        # Determine S3 key based on content type
-        if content_type == 'article':
-            s3_key = f"articles/{unique_filename}"
-        elif content_type == 'web_clip':
-            s3_key = f"web-clips/{unique_filename}"
-        elif content_type == 'pdf':
-            s3_key = f"pdfs/{unique_filename}"
-        elif content_type == 'external_video':
-            s3_key = f"external-videos/{unique_filename}"
-        else:
-            s3_key = f"external-content/{unique_filename}"
-
-        # Get file info
-        mime_type = mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
-        file.seek(0, os.SEEK_END)
-        file_size = file.tell()
-        file.seek(0)
-
-        # Upload to S3
-        s3_client = get_s3_client()
-        config = get_config()
-        bucket = config.s3_bucket
-
-        s3_client.upload_fileobj(
-            file,
-            bucket,
-            s3_key,
-            ExtraArgs={
-                'ContentType': mime_type,
-                'Metadata': {
-                    'original_filename': file.filename,
-                    'uploaded_by': session.get('user_id', 'unknown'),
-                    'content_type': content_type
-                }
-            }
-        )
-
-        # Create database record
-        with DatabaseSession() as db_session:
-            item = ExternalContent(
-                title=title,
-                content_type=content_type,
-                description=description,
-                author=author,
-                original_filename=file.filename,
-                s3_key=s3_key,
-                s3_bucket=bucket,
-                file_size_bytes=file_size,
-                file_format=file_extension.lstrip('.').lower(),
-                status='uploaded',
-                created_by=UUID(session['user_id']) if session.get('user_id') and session.get('user_id') != 'demo-user-id' else None
-            )
-            db_session.add(item)
-            db_session.commit()
-
-            # Generate preview URL
-            preview_url = s3_client.generate_presigned_url(
-                'get_object',
-                Params={'Bucket': bucket, 'Key': s3_key},
-                ExpiresIn=86400  # 24 hours for uploads
-            )
-
-            return jsonify({
-                'success': True,
-                'id': str(item.id),
-                'title': title,
-                'content_type': content_type,
-                'file_size': file_size,
-                'preview_url': preview_url,
-                'message': 'File uploaded successfully'
-            })
+        user_id = session.get('user_id')
+        result = ExternalContentService.upload_file(file, metadata, user_id)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
