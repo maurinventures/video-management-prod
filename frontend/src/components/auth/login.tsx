@@ -34,8 +34,8 @@ export function Login({ onLogin, onSignupClick, onForgotPassword }: LoginProps) 
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold mb-2">Resonance AI</h1>
-          <p className="text-muted-foreground">Sign in to your Digital Brain</p>
+          <h1 className="text-3xl font-semibold mb-2">Internal Platform</h1>
+          <p className="text-muted-foreground">Sign in to your AI-powered workspace</p>
         </div>
 
         <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
