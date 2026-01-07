@@ -3,8 +3,9 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Header } from './components/layout/Header';
 import { ChatInterface } from './components/chat/ChatInterface';
+import { UsageDisplay } from './components/usage/UsageDisplay';
 
-// Dashboard component with chat interface for testing
+// Dashboard component with chat interface and usage display for testing
 function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -17,13 +18,25 @@ function Dashboard() {
               Chat with AI Models
             </h2>
             <p className="text-gray-600">
-              Test the chat interface with model selection. Choose between Claude and OpenAI models.
+              Test the chat interface with model selection and monitor your usage.
             </p>
           </div>
 
-          {/* Chat interface */}
-          <div className="h-[600px]">
-            <ChatInterface className="h-full" />
+          {/* Main content grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Chat interface - takes up 2/3 on large screens */}
+            <div className="lg:col-span-2">
+              <div className="h-[600px] bg-white rounded-lg shadow">
+                <ChatInterface className="h-full" />
+              </div>
+            </div>
+
+            {/* Usage display - takes up 1/3 on large screens */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow">
+                <UsageDisplay />
+              </div>
+            </div>
           </div>
         </div>
       </div>

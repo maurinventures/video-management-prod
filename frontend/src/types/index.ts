@@ -346,6 +346,63 @@ export interface AIUsageLog {
   error?: string;
 }
 
+// Usage tracking types
+export interface UsageStatus {
+  user_id: string;
+  usage_allowed: boolean;
+  daily_tokens_used: number;
+  daily_tokens_remaining: number;
+  daily_percentage_used: number;
+  warning_active: boolean;
+  limit_reached: boolean;
+  max_daily_tokens: number;
+}
+
+export interface UsageLimits {
+  limits: {
+    max_daily_tokens_per_user: number;
+    max_context_tokens_per_request: number;
+    warning_threshold_percent: number;
+  };
+  model_pricing: {
+    [model: string]: {
+      currency: string;
+      input_cost_per_1k_tokens: number;
+      output_cost_per_1k_tokens: number;
+    };
+  };
+  supported_models: string[];
+}
+
+export interface UsageStats {
+  user_id: string;
+  current_usage: {
+    daily_limit: number;
+    limit_reached: boolean;
+    today_percentage: number;
+    today_tokens: number;
+    warning_active: boolean;
+  };
+  limits: {
+    max_context_tokens: number;
+    max_daily_tokens: number;
+    warning_threshold_percent: number;
+  };
+  model_pricing: {
+    [model: string]: [number, number]; // [input_rate, output_rate]
+  };
+  period_stats: {
+    avg_cost_per_call: number;
+    models_used: string[];
+    period_days: number;
+    total_calls: number;
+    total_cost: number;
+    total_input_tokens: number;
+    total_output_tokens: number;
+    total_tokens: number;
+  };
+}
+
 // Search and filter types
 export interface SearchResult {
   type: 'conversation' | 'message' | 'video' | 'audio' | 'transcript';

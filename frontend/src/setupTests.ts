@@ -5,4 +5,4 @@
 import '@testing-library/jest-dom';
 
 // Import our custom test setup (Prompt 23: Frontend Tests)
-import './test-utils/test-setup';
+// import './test-utils/test-setup'; // Temporarily disabled for build

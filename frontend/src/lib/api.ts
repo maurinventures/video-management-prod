@@ -31,6 +31,9 @@ import {
   VideoDownloadResponse,
   ClipDownloadOptions,
   VideoDownloadOptions,
+  UsageStatus,
+  UsageLimits,
+  UsageStats,
 } from '../types';
 
 // Base configuration
@@ -584,6 +587,28 @@ class ApiClient {
     // Search external content (same as list but with search emphasis)
     search: (query: string, options: Omit<ExternalContentSearchOptions, 'q'> = {}) =>
       this.externalContent.list({ ...options, q: query }),
+  };
+
+  // Usage tracking endpoints
+  usage = {
+    // Get current usage status
+    getStatus: () => this.get<UsageStatus>('/api/usage/status'),
+
+    // Get usage limits and pricing
+    getLimits: () => this.get<UsageLimits>('/api/usage/limits'),
+
+    // Get comprehensive usage stats
+    getStats: (days?: number) => {
+      const params = days ? `?days=${days}` : '';
+      return this.get<UsageStats>(`/api/usage/stats${params}`);
+    },
+
+    // Clean old cached prompts (admin only)
+    cleanCache: (days?: number) =>
+      this.post<{ success: boolean; deleted_entries: number; cutoff_days: number }>(
+        '/api/usage/clean-cache',
+        { days }
+      ),
   };
 
   // Admin endpoints (if needed)
