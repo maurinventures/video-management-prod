@@ -46,7 +46,7 @@ class AuthService:
     """Service for managing authentication and user operations."""
 
     # Demo mode configuration
-    DEMO_EMAIL = 'joy@maurinventures.com'
+    DEMO_EMAIL = 'demo@maurinventures.com'
     DEMO_USER_ID = 'demo-user-id'
     DEMO_USER_DATA = {
         'id': DEMO_USER_ID,

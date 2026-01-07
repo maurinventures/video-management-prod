@@ -8,7 +8,6 @@ export interface InvitedUser {
 // Only invited guests are allowed to use this platform
 export const INVITED_USERS: InvitedUser[] = [
   { email: "joy@maurinventures.com", role: "admin" },
-  { email: "joy.admin@maurinventures.com", role: "admin" },
   { email: "branden@maurinventures.com", role: "user" },
   { email: "stefanie@maurinventures.com", role: "user" },
   { email: "dafneestardo@gmail.com", role: "user" },

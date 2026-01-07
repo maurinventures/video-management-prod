@@ -21,7 +21,7 @@ except Exception as e:
 def create_user_account():
     """Create admin user account with specified credentials."""
 
-    email = "joy.admin@maurinventures.com"  # Updated to bypass demo mode
+    email = "joy@maurinventures.com"  # Admin email as requested
     name = "Joy"
     password = "Admin123450!"  # Admin password as requested
 

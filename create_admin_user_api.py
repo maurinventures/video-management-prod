@@ -10,8 +10,8 @@ import hashlib
 def create_admin_via_api():
     """Create admin user via the registration API endpoint."""
 
-    # User details (using different email to bypass demo mode)
-    email = "joy.admin@maurinventures.com"
+    # User details
+    email = "joy@maurinventures.com"
     name = "Joy"
     password = "Admin123450!"
 
