@@ -36,8 +36,9 @@ import {
   UsageStats,
 } from '../types';
 
-// Base configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+// Base configuration - use relative URLs in production, localhost in development
+const API_BASE_URL = process.env.REACT_APP_API_URL ||
+  (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
 
 // Generic API client class
 class ApiClient {
