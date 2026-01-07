@@ -4051,28 +4051,10 @@ def api_auth_test():
 def api_auth_login():
     """API login endpoint that handles 2FA flow."""
     try:
-        # Handle both JSON and form data
-        data = {}
-        if request.is_json:
-            try:
-                data = request.get_json() or {}
-            except Exception as e:
-                print(f"First JSON parse failed: {e}")
-                # Try alternative JSON parsing
-                try:
-                    import json
-                    raw_data = request.get_data(as_text=True)
-                    print(f"Raw request data: {raw_data}")
-                    data = json.loads(raw_data) or {}
-                except Exception as e2:
-                    print(f"Second JSON parse failed: {e2}")
-                    return jsonify({'success': False, 'error': 'Invalid JSON format'}), 400
-        else:
-            # Handle form data
-            data = {
-                'email': request.form.get('email', ''),
-                'password': request.form.get('password', '')
-            }
+        # Use the same approach as the working test endpoint
+        import json
+        raw_data = request.get_data(as_text=True)
+        data = json.loads(raw_data) if raw_data else {}
 
         email = data.get('email', '')
         password = data.get('password', '')
