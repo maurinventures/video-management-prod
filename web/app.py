@@ -4039,9 +4039,14 @@ def api_auth_login():
     try:
         # Handle JSON parsing safely
         try:
+            print(f"Request method: {request.method}")
+            print(f"Request content type: {request.content_type}")
+            print(f"Request data: {request.get_data()}")
             data = request.get_json(force=True) or {}
+            print(f"Parsed JSON data: {data}")
         except Exception as json_error:
             print(f"JSON parsing error: {json_error}")
+            print(f"Raw request data: {request.get_data()}")
             return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
 
         email = data.get('email', '')
