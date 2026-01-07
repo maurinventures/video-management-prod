@@ -4057,11 +4057,15 @@ def api_auth_login():
             try:
                 data = request.get_json() or {}
             except Exception as e:
+                print(f"First JSON parse failed: {e}")
                 # Try alternative JSON parsing
                 try:
                     import json
-                    data = json.loads(request.get_data(as_text=True)) or {}
-                except Exception:
+                    raw_data = request.get_data(as_text=True)
+                    print(f"Raw request data: {raw_data}")
+                    data = json.loads(raw_data) or {}
+                except Exception as e2:
+                    print(f"Second JSON parse failed: {e2}")
                     return jsonify({'success': False, 'error': 'Invalid JSON format'}), 400
         else:
             # Handle form data
