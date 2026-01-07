@@ -4037,9 +4037,18 @@ def api_auth_me():
 def api_auth_login():
     """API login endpoint that handles 2FA flow."""
     try:
-        data = request.json or {}
+        # Handle JSON parsing safely
+        try:
+            data = request.get_json(force=True) or {}
+        except Exception as json_error:
+            print(f"JSON parsing error: {json_error}")
+            return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+
         email = data.get('email', '')
         password = data.get('password', '')
+
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'Email and password are required'}), 400
 
         result = AuthService.authenticate_user(email, password)
 
