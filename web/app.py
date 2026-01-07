@@ -23,7 +23,7 @@ import boto3
 from sqlalchemy import or_, text
 from scripts.db import DatabaseSession, Video, Transcript, TranscriptSegment, CompiledVideo, ScriptFeedback, Conversation, ChatMessage, User, AILog, Persona, Document, SocialPost, AudioRecording, AudioSegment, Project, ExternalContent, ExternalContentSegment
 from services.external_content_service import ExternalContentService
-from services.auth_service import AuthService
+from web.services.auth_service import AuthService
 from services.transcript_service import TranscriptService
 from services.video_service import VideoService
 from services.ai_service import AIService
