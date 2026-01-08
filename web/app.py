@@ -13,8 +13,6 @@ from uuid import UUID
 
 from flask import Flask, render_template, jsonify, request, send_file, redirect, url_for, session
 from flask_cors import CORS
-from openai import OpenAI
-import anthropic
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
