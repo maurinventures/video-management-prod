@@ -321,8 +321,14 @@ class AuthService:
         if is_demo and user_id == AuthService.DEMO_USER_ID:
             return AuthService.DEMO_USER_DATA.copy()
 
+        try:
+            user_uuid = UUID(user_id)
+        except ValueError:
+            # Invalid UUID format
+            return None
+
         with DatabaseSession() as db_session:
-            user = db_session.query(User).filter(User.id == UUID(user_id)).first()
+            user = db_session.query(User).filter(User.id == user_uuid).first()
             if not user:
                 return None
 
