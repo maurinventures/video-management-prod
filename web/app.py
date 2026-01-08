@@ -4084,6 +4084,7 @@ def api_auth_login():
             return jsonify(result)
 
         if result.get('requires_2fa_setup'):
+            session.permanent = True  # Make session permanent
             session['pending_2fa_setup_user_id'] = result['user_id']
             session['pending_2fa_setup_email'] = result['user']['email']
             session['pending_2fa_setup_name'] = result['user']['name']
@@ -4151,6 +4152,7 @@ def api_auth_setup_2fa():
             qr_data = AuthService.setup_2fa_secret()
 
             # Store secret temporarily in session for verification
+            session.permanent = True  # Make session permanent
             session['pending_2fa_secret'] = qr_data['secret']
             session.modified = True  # Explicitly mark session as modified
 
@@ -4161,7 +4163,8 @@ def api_auth_setup_2fa():
                 'debug': {
                     'user_id_in_session': session.get('pending_2fa_setup_user_id'),
                     'secret_stored': True,
-                    'session_modified': True
+                    'session_modified': True,
+                    'session_permanent': session.permanent
                 }
             })
 
@@ -4173,7 +4176,8 @@ def api_auth_setup_2fa():
             debug_info = {
                 'has_user_id': has_user_id,
                 'has_secret': has_secret,
-                'session_keys': list(session.keys()) if session else []
+                'session_keys': list(session.keys()) if session else [],
+                'session_permanent': session.permanent
             }
 
             if not has_user_id or not has_secret:
