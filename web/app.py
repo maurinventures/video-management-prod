@@ -2840,6 +2840,9 @@ def api_chat_test():
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
     """Handle chat messages for script generation or copy generation."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Authentication required'}), 401
+
     try:
         data = request.json
         user_message = data.get('message', '').strip()
