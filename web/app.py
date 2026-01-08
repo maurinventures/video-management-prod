@@ -4452,7 +4452,7 @@ def api_auth_logout():
 
     # Explicitly clear session cookie by setting it to expire
     response.set_cookie(
-        app.session_cookie_name,
+        'session',  # Flask's default session cookie name
         '',
         expires=0,
         httponly=True,
