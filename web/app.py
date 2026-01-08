@@ -4286,18 +4286,26 @@ def api_auth_verify_backup_code():
 def api_auth_register():
     """Register new user with email verification."""
     try:
+        print(f"DEBUG: Registration request received")
         data = request.json or {}
         name = data.get('name', '')
         email = data.get('email', '')
         password = data.get('password', '')
+        print(f"DEBUG: Registration data - name: {name}, email: {email}, password: {'*' * len(password) if password else 'empty'}")
 
         result = AuthService.register_user(name, email, password)
+        print(f"DEBUG: Registration result: {result}")
         return jsonify(result), 200 if result['success'] else 400
 
     except ValueError as e:
+        print(f"Registration ValueError: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
-        print(f"Registration error: {e}")
+        print(f"Registration Exception: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': 'Registration failed'}), 500
 
 
