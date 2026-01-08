@@ -252,6 +252,18 @@ class AuthService:
         name = name.strip()
         email = email.strip().lower()
 
+        # Check if email is in allowed list
+        ALLOWED_EMAILS = {
+            'joy@maurinventures.com',
+            'branden@maurinventures.com',
+            'stefanie@maurinventures.com',
+            'dafneestardo@gmail.com',
+            'chikiestardo143@gmail.com'
+        }
+
+        if email not in ALLOWED_EMAILS:
+            raise ValueError('Registration is currently by invitation only. Please contact support if you need access.')
+
         # Validate email format
         if not AuthService.validate_email(email):
             raise ValueError('Invalid email format')
