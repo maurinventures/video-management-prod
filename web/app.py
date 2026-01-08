@@ -4039,11 +4039,10 @@ def api_auth_login():
             session['user_email'] = email
             return jsonify(result)
 
-        # Handle 2FA flow
+        # Handle 2FA flow - generate temporary token (no session yet)
         if result.get('requires_2fa'):
-            session['pending_2fa_user_id'] = result['user_id']
-            session['pending_2fa_email'] = result['user']['email']
-            session.modified = True  # Explicitly mark session as modified
+            temp_token = AuthService.generate_2fa_temp_token(result['user_id'])
+            result['temp_token'] = temp_token
             return jsonify(result)
 
         if result.get('requires_2fa_setup'):
@@ -4065,25 +4064,26 @@ def api_auth_login():
 
 @app.route('/api/auth/verify-2fa', methods=['POST'])
 def api_auth_verify_2fa():
-    """Verify 2FA code and complete login."""
+    """Verify 2FA code and complete login with temporary token."""
     try:
-        if 'pending_2fa_user_id' not in session:
-            return jsonify({'success': False, 'error': 'No pending 2FA verification'}), 400
-
         data = request.json or {}
-        token = data.get('token', '').strip()
-        user_id = session['pending_2fa_user_id']
+        code = data.get('token', '').strip()
+        temp_token = data.get('temp_token', '').strip()
 
-        result = AuthService.verify_2fa_token(user_id, token)
+        # Verify temporary token and extract user ID
+        user_id = AuthService.verify_2fa_temp_token(temp_token)
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Invalid or expired verification token'}), 400
+
+        # Verify 2FA code
+        result = AuthService.verify_2fa_token(user_id, code)
 
         if result['success']:
-            # Set up persistent session (7 days)
-            session.permanent = True
+            # NOW create the session after both password AND 2FA verified
+            session.permanent = True  # 14-day persistent session
             session['user_id'] = user_id
             session['user_name'] = result['user']['name']
             session['user_email'] = result['user']['email']
-            session.pop('pending_2fa_user_id', None)
-            session.pop('pending_2fa_email', None)
 
         return jsonify(result), 200 if result['success'] else 401
 

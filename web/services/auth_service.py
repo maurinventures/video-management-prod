@@ -8,6 +8,8 @@ email verification, session management, and demo mode functionality.
 import re
 import secrets
 import hashlib
+import json
+import time
 from datetime import datetime, timedelta
 from uuid import UUID
 from typing import Dict, Any, Optional, Tuple
@@ -547,3 +549,56 @@ class AuthService:
         img_str = base64.b64encode(buffer.getvalue()).decode()
 
         return f"data:image/png;base64,{img_str}"
+
+    @staticmethod
+    def generate_2fa_temp_token(user_id: str) -> str:
+        """
+        Generate temporary token for 2FA verification flow.
+
+        Args:
+            user_id: User ID to encode in token
+
+        Returns:
+            Temporary token string (expires in 5 minutes)
+        """
+        payload = {
+            'user_id': user_id,
+            'created_at': int(time.time()),
+            'expires_at': int(time.time()) + 300  # 5 minutes
+        }
+
+        # Create a simple signed token (in production, use JWT)
+        token_data = base64.b64encode(json.dumps(payload).encode()).decode()
+        signature = hashlib.sha256(f"{token_data}{secrets.token_hex(16)}".encode()).hexdigest()[:16]
+
+        return f"{token_data}.{signature}"
+
+    @staticmethod
+    def verify_2fa_temp_token(token: str) -> Optional[str]:
+        """
+        Verify temporary 2FA token and extract user ID.
+
+        Args:
+            token: Temporary token from 2FA flow
+
+        Returns:
+            User ID if token is valid, None if invalid/expired
+        """
+        try:
+            if '.' not in token:
+                return None
+
+            token_data, signature = token.split('.', 1)
+            payload_str = base64.b64decode(token_data.encode()).decode()
+
+            # Parse JSON payload
+            payload = json.loads(payload_str)
+
+            # Check expiration
+            if int(time.time()) > payload['expires_at']:
+                return None
+
+            return payload['user_id']
+
+        except Exception:
+            return None
