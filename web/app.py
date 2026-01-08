@@ -4530,7 +4530,7 @@ def api_auth_forgot_password():
                     region_name='us-east-1'
                 )
 
-                ses_client.send_email(
+                response = ses_client.send_email(
                     Source='ops@maurinventures.com',
                     Destination={'ToAddresses': [email]},
                     Message={
@@ -4539,10 +4539,20 @@ def api_auth_forgot_password():
                     }
                 )
 
-                print(f"Password reset email sent to {email}")
+                import logging
+                logging.basicConfig(level=logging.INFO)
+                logger = logging.getLogger(__name__)
+                logger.info(f"Password reset email sent to {email}, MessageId: {response['MessageId']}")
+                print(f"Password reset email sent to {email}, MessageId: {response['MessageId']}")
 
             except Exception as email_error:
+                import logging
+                logging.basicConfig(level=logging.ERROR)
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send password reset email to {email}: {email_error}")
                 print(f"Failed to send password reset email: {email_error}")
+                import traceback
+                traceback.print_exc()
                 return jsonify({'error': 'Failed to send reset email'}), 500
 
             return jsonify({
