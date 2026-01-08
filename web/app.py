@@ -4394,14 +4394,19 @@ def api_conversations_create():
     return jsonify({'error': 'Not authenticated'}), 401
 
 
-@app.route('/api/auth/verify-email', methods=['GET'])
+@app.route('/api/auth/verify-email', methods=['GET', 'POST'])
 def api_auth_verify_email():
-    """Verify email with token."""
+    """Verify email with token or code."""
     try:
-        token = request.args.get('token', '')
+        # Handle both GET (legacy URL-based) and POST (new code-based) requests
+        if request.method == 'GET':
+            token = request.args.get('token', '')
+        else:  # POST
+            data = request.json or {}
+            token = data.get('code', '') or data.get('token', '')
 
         if not token:
-            return jsonify({'success': False, 'error': 'Verification token is required'}), 400
+            return jsonify({'success': False, 'error': 'Verification code is required'}), 400
 
         result = AuthService.verify_email(token)
 

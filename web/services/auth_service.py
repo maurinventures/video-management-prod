@@ -290,8 +290,8 @@ class AuthService:
             if existing:
                 raise ValueError('Email already registered')
 
-            # Generate verification token
-            verification_token = secrets.token_urlsafe(32)
+            # Generate verification code (6 digits)
+            verification_token = str(secrets.randbelow(900000) + 100000)  # 6-digit code
             expires_at = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiry
 
             # Create user
@@ -398,8 +398,8 @@ class AuthService:
             if user.email_verified:
                 return {'success': False, 'error': 'Email already verified'}
 
-            # Generate new verification token
-            verification_token = secrets.token_urlsafe(32)
+            # Generate new verification code (6 digits)
+            verification_token = str(secrets.randbelow(900000) + 100000)  # 6-digit code
             expires_at = datetime.utcnow() + timedelta(hours=24)
 
             user.verification_token = verification_token
@@ -429,7 +429,6 @@ class AuthService:
         """
         try:
             ses = get_ses_client()
-            verification_url = f"https://maurinventuresinternal.com/verify-email?token={verification_token}"
 
             html_body = f"""
             <html>
@@ -440,11 +439,11 @@ class AuthService:
                     </div>
                     <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 20px; text-align: center;">Verify Your Email</h1>
                     <p style="color: #444; font-size: 16px; line-height: 1.6;">Hi {name},</p>
-                    <p style="color: #444; font-size: 16px; line-height: 1.6;">Welcome to MV Internal! Please verify your email address by clicking the button below:</p>
+                    <p style="color: #444; font-size: 16px; line-height: 1.6;">Welcome to MV Internal! Please enter this verification code in the app:</p>
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="{verification_url}" style="display: inline-block; background: #d97757; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Verify Email</a>
+                        <div style="display: inline-block; background: #f0f0f0; color: #333; padding: 20px 30px; border-radius: 8px; font-weight: bold; font-size: 32px; letter-spacing: 4px; font-family: 'Courier New', monospace;">{verification_token}</div>
                     </div>
-                    <p style="color: #666; font-size: 14px; line-height: 1.6;">This link expires in 24 hours.</p>
+                    <p style="color: #666; font-size: 14px; line-height: 1.6;">This code expires in 24 hours.</p>
                     <p style="color: #666; font-size: 14px; line-height: 1.6;">If you didn't create an account, you can safely ignore this email.</p>
                     <hr style="border: none; border-top: 1px solid #e5e4df; margin: 30px 0;">
                     <p style="color: #999; font-size: 12px; text-align: center;">MV Internal - Maurin Ventures</p>
@@ -456,10 +455,11 @@ class AuthService:
             text_body = f"""
             Hi {name},
 
-            Welcome to MV Internal! Please verify your email address by visiting:
-            {verification_url}
+            Welcome to MV Internal! Please enter this verification code in the app:
 
-            This link expires in 24 hours.
+            {verification_token}
+
+            This code expires in 24 hours.
 
             If you didn't create an account, you can safely ignore this email.
 
@@ -482,9 +482,8 @@ class AuthService:
 
         except Exception as e:
             print(f"Email sending error: {e}")
-            # Fallback: log verification URL for development
-            verification_url = f"https://maurinventuresinternal.com/verify-email?token={verification_token}"
-            print(f"VERIFICATION EMAIL for {to_email}: {verification_url}")
+            # Fallback: log verification code for development
+            print(f"VERIFICATION CODE for {to_email}: {verification_token}")
             return False
 
     @staticmethod
