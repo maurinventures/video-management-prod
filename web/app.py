@@ -4404,6 +4404,20 @@ def api_auth_verify_email():
             return jsonify({'success': False, 'error': 'Verification token is required'}), 400
 
         result = AuthService.verify_email(token)
+
+        # If email verification succeeded, set up 2FA setup session
+        if result['success'] and result.get('user'):
+            user = result['user']
+            # Since 2FA is mandatory for all users, set up the 2FA setup session
+            session.permanent = True  # Make session permanent
+            session['pending_2fa_setup_user_id'] = user['id']
+            session['pending_2fa_setup_email'] = user['email']
+            session['pending_2fa_setup_name'] = user['name']
+            session.modified = True  # Explicitly mark session as modified
+
+            # Add requires_2fa_setup to the response
+            result['requires_2fa_setup'] = True
+
         return jsonify(result), 200 if result['success'] else 400
 
     except Exception as e:
