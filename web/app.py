@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import boto3
 from sqlalchemy import or_, text
-from scripts.db import DatabaseSession, Video, Transcript, TranscriptSegment, CompiledVideo, ScriptFeedback, Conversation, ChatMessage, User, AILog, Persona, Document, SocialPost, AudioRecording, AudioSegment, Project, ExternalContent, ExternalContentSegment
+from scripts.db import DatabaseSession, Video, Transcript, TranscriptSegment, CompiledVideo, ScriptFeedback, Conversation, ChatMessage, User, AILog, Persona, Document, SocialPost, AudioRecording, AudioSegment, Project, ExternalContent, ExternalContentSegment, PasswordResetToken
 from web.services.external_content_service import ExternalContentService
 from web.services.auth_service import AuthService
 from web.services.transcript_service import TranscriptService
@@ -1945,7 +1945,7 @@ def setup_2fa_after_verify():
 # CONVERSATION API ENDPOINTS
 # ============================================================================
 
-# @app.route('/api/conversations', methods=['GET'])
+@app.route('/api/conversations/list', methods=['GET'])
 def api_list_conversations():
     """List all conversations for the current user."""
     if 'user_id' not in session:
@@ -1975,7 +1975,7 @@ def api_list_conversations():
         })
 
 
-# @app.route('/api/conversations', methods=['POST'])
+@app.route('/api/conversations/create', methods=['POST'])
 def api_create_conversation():
     """Create a new conversation."""
     if 'user_id' not in session:
@@ -2028,7 +2028,7 @@ def api_create_conversation():
         })
 
 
-# @app.route('/api/conversations/<conversation_id>', methods=['GET'])
+@app.route('/api/conversations/<conversation_id>/messages', methods=['GET'])
 def api_get_conversation(conversation_id):
     """Get a conversation with all messages."""
     if 'user_id' not in session:
@@ -4322,8 +4322,8 @@ def api_auth_register():
 # CONVERSATIONS ENDPOINTS - DEMO MODE
 # ==============================================================================
 
-@app.route('/api/conversations', methods=['GET'])
-def api_conversations_list():
+@app.route('/api/conversations/demo', methods=['GET'])
+def api_conversations_list_demo():
     """List conversations for current user - Demo mode."""
     if session.get('user_id') == 'demo-user-id':
         return jsonify({
@@ -4341,8 +4341,8 @@ def api_conversations_list():
         })
     return jsonify({'error': 'Not authenticated'}), 401
 
-@app.route('/api/conversations', methods=['POST'])
-def api_conversations_create():
+@app.route('/api/conversations/demo', methods=['POST'])
+def api_conversations_create_demo():
     """Create new conversation - Demo mode."""
     if session.get('user_id') == 'demo-user-id':
         data = request.json or {}
@@ -4438,6 +4438,181 @@ def api_auth_logout():
     if user_logged_out:
         session['logged_out'] = True
     return jsonify({'success': True})
+
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def api_auth_forgot_password():
+    """Send password reset email."""
+    try:
+        data = request.json
+        email = data.get('email', '').strip().lower()
+
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+
+        with DatabaseSession() as db_session:
+            user = db_session.query(User).filter(
+                User.email == email,
+                User.is_active == 1
+            ).first()
+
+            if not user:
+                # For security, don't reveal if email exists or not
+                return jsonify({
+                    'success': True,
+                    'message': 'If an account with this email exists, you will receive a password reset link shortly.'
+                })
+
+            # Generate secure reset token (32 random bytes)
+            import secrets
+            reset_token = secrets.token_urlsafe(32)
+
+            # Hash the token for database storage
+            import hashlib
+            token_hash = hashlib.sha256(reset_token.encode()).hexdigest()
+
+            # Set expiration (24 hours from now)
+            from datetime import datetime, timedelta
+            expires_at = datetime.utcnow() + timedelta(hours=24)
+
+            # Invalidate any existing tokens for this user
+            existing_tokens = db_session.query(PasswordResetToken).filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.is_used == 0
+            ).all()
+            for token in existing_tokens:
+                token.is_used = 1
+
+            # Create new reset token
+            reset_token_record = PasswordResetToken(
+                user_id=user.id,
+                token_hash=token_hash,
+                expires_at=expires_at
+            )
+            db_session.add(reset_token_record)
+            db_session.commit()
+
+            # Send email with reset link
+            reset_url = f"https://maurinventuresinternal.com/reset-password?token={reset_token}"
+
+            # Email content
+            subject = "Reset Your Password - Resonance AI"
+            html_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #2563eb;">Password Reset Request</h2>
+                        <p>Hello {user.name},</p>
+                        <p>We received a request to reset your password for your Resonance AI account.</p>
+                        <p>Click the button below to reset your password:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{reset_url}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+                        </div>
+                        <p>Or copy and paste this link into your browser:</p>
+                        <p style="word-break: break-all; color: #666;">{reset_url}</p>
+                        <p><strong>This link will expire in 24 hours.</strong></p>
+                        <p>If you didn't request a password reset, you can safely ignore this email.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="color: #666; font-size: 12px;">Resonance AI - Digital Brain Platform</p>
+                    </div>
+                </body>
+            </html>
+            """
+
+            # Send email using SES
+            try:
+                import boto3
+                config = get_config()
+                ses_client = boto3.client(
+                    'ses',
+                    aws_access_key_id=config.aws_access_key,
+                    aws_secret_access_key=config.aws_secret_key,
+                    region_name='us-east-1'
+                )
+
+                ses_client.send_email(
+                    Source='ops@maurinventures.com',
+                    Destination={'ToAddresses': [email]},
+                    Message={
+                        'Subject': {'Data': subject},
+                        'Body': {'Html': {'Data': html_body}}
+                    }
+                )
+
+                print(f"Password reset email sent to {email}")
+
+            except Exception as email_error:
+                print(f"Failed to send password reset email: {email_error}")
+                return jsonify({'error': 'Failed to send reset email'}), 500
+
+            return jsonify({
+                'success': True,
+                'message': 'If an account with this email exists, you will receive a password reset link shortly.'
+            })
+
+    except Exception as e:
+        print(f"Forgot password error: {e}")
+        return jsonify({'error': 'An error occurred. Please try again.'}), 500
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def api_auth_reset_password():
+    """Reset password with token."""
+    try:
+        data = request.json
+        token = data.get('token', '').strip()
+        new_password = data.get('password', '').strip()
+
+        if not token or not new_password:
+            return jsonify({'error': 'Token and new password are required'}), 400
+
+        if len(new_password) < 8:
+            return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+
+        # Hash the provided token to match against database
+        import hashlib
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+        with DatabaseSession() as db_session:
+            # Find valid reset token
+            reset_token = db_session.query(PasswordResetToken).filter(
+                PasswordResetToken.token_hash == token_hash,
+                PasswordResetToken.is_used == 0,
+                PasswordResetToken.expires_at > datetime.utcnow()
+            ).first()
+
+            if not reset_token:
+                return jsonify({'error': 'Invalid or expired reset token'}), 400
+
+            # Get the user
+            user = db_session.query(User).filter(
+                User.id == reset_token.user_id,
+                User.is_active == 1
+            ).first()
+
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+
+            # Hash new password
+            from werkzeug.security import generate_password_hash
+            user.password_hash = generate_password_hash(new_password)
+
+            # Mark token as used
+            reset_token.is_used = 1
+            reset_token.used_at = datetime.utcnow()
+
+            db_session.commit()
+
+            print(f"Password reset successful for user {user.email}")
+
+            return jsonify({
+                'success': True,
+                'message': 'Password has been successfully reset. You can now log in with your new password.'
+            })
+
+    except Exception as e:
+        print(f"Reset password error: {e}")
+        return jsonify({'error': 'An error occurred. Please try again.'}), 500
 
 
 # Prompt 19: Usage Stats and Tracking API Endpoint
