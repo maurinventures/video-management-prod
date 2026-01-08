@@ -56,65 +56,6 @@ def get_ses_client():
     )
 
 
-def send_verification_email(to_email: str, name: str, verification_token: str) -> bool:
-    """Send email verification code via AWS SES."""
-    try:
-        ses = get_ses_client()
-
-        html_body = f"""
-        <html>
-        <body style="font-family: 'Inter', Arial, sans-serif; background-color: #f5f4ef; padding: 40px;">
-            <div style="max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <div style="display: inline-block; width: 50px; height: 50px; background: #d97757; border-radius: 10px; line-height: 50px; color: white; font-size: 24px; font-weight: bold;">M</div>
-                </div>
-                <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 20px; text-align: center;">Verify Your Email</h1>
-                <p style="color: #444; font-size: 16px; line-height: 1.6;">Hi {name},</p>
-                <p style="color: #444; font-size: 16px; line-height: 1.6;">Welcome to MV Internal! Please enter this verification code in the app:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <div style="display: inline-block; background: #f0f0f0; color: #333; padding: 20px 30px; border-radius: 8px; font-weight: bold; font-size: 32px; letter-spacing: 4px; font-family: 'Courier New', monospace;">{verification_token}</div>
-                </div>
-                <p style="color: #666; font-size: 14px; line-height: 1.6;">This code expires in 24 hours.</p>
-                <p style="color: #666; font-size: 14px; line-height: 1.6;">If you didn't create an account, you can safely ignore this email.</p>
-                <hr style="border: none; border-top: 1px solid #e5e4df; margin: 30px 0;">
-                <p style="color: #999; font-size: 12px; text-align: center;">MV Internal - Maurin Ventures</p>
-            </div>
-        </body>
-        </html>
-        """
-
-        text_body = f"""
-Hi {name},
-
-Welcome to MV Internal! Please enter this verification code in the app:
-
-{verification_token}
-
-This code expires in 24 hours.
-
-If you didn't create an account, you can safely ignore this email.
-
-MV Internal - Maurin Ventures
-        """
-
-        ses.send_email(
-            Source="ops@maurinventures.com",
-            Destination={"ToAddresses": [to_email]},
-            Message={
-                "Subject": {"Data": "Verify your email - MV Internal", "Charset": "UTF-8"},
-                "Body": {
-                    "Text": {"Data": text_body, "Charset": "UTF-8"},
-                    "Html": {"Data": html_body, "Charset": "UTF-8"},
-                },
-            },
-        )
-        return True
-    except Exception as e:
-        print(f"Email sending error: {e}")
-        # Fallback: log verification code for development
-        print(f"VERIFICATION CODE for {to_email}: {verification_token}")
-        return False
-
 
 def send_invite_email(to_email: str, name: str, password: str) -> bool:
     """Send account invite email with credentials via AWS SES."""
@@ -1882,7 +1823,7 @@ def register():
             db_session.commit()
 
             # Send verification email
-            if send_verification_email(email, name, verification_token):
+            if AuthService.send_verification_email(email, name, verification_token):
                 return render_template('register.html',
                     success=True,
                     message=f'Check your email ({email}) for a verification link.')
@@ -4956,17 +4897,6 @@ def api_upload_external_content():
 
 
 # Helper functions for email sending
-def send_verification_email(email, name, token):
-    """Send email verification email."""
-    try:
-        # TODO: Implement actual email sending
-        # For now, just log the verification link
-        verification_url = f"https://maurinventuresinternal.com/verify-email?token={token}"
-        print(f"VERIFICATION EMAIL for {email}: {verification_url}")
-        return True
-    except Exception as e:
-        print(f"Email sending error: {e}")
-        return False
 
 
 # DISABLED: Flask app execution (CLI-only mode)
