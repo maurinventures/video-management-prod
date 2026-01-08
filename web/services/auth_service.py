@@ -455,7 +455,7 @@ class AuthService:
             """
 
             response = ses.send_email(
-                Source="noreply@maurinventuresinternal.com",
+                Source="ops@maurinventures.com",
                 Destination={'ToAddresses': [to_email]},
                 Message={
                     'Subject': {'Data': 'Verify Your Email - MV Internal'},
