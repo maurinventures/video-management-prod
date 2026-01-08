@@ -22,11 +22,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import boto3
 from sqlalchemy import or_, text
 from scripts.db import DatabaseSession, Video, Transcript, TranscriptSegment, CompiledVideo, ScriptFeedback, Conversation, ChatMessage, User, AILog, Persona, Document, SocialPost, AudioRecording, AudioSegment, Project, ExternalContent, ExternalContentSegment
-from services.external_content_service import ExternalContentService
+from web.services.external_content_service import ExternalContentService
 from web.services.auth_service import AuthService
-from services.transcript_service import TranscriptService
-from services.video_service import VideoService
-from services.ai_service import AIService
+from web.services.transcript_service import TranscriptService
+from web.services.video_service import VideoService
+from web.services.ai_service import AIService
 import time
 import hashlib
 import pyotp
@@ -4423,7 +4423,7 @@ def api_usage_stats():
 
     try:
         # Import usage limits service
-        from services.usage_limits_service import UsageLimitsService
+        from web.services.usage_limits_service import UsageLimitsService
 
         # Get days parameter (default 30 days)
         days = request.args.get('days', 30, type=int)
@@ -4491,7 +4491,7 @@ def api_clean_usage_cache():
         return jsonify({'error': 'Admin access required'}), 403
 
     try:
-        from services.usage_limits_service import UsageLimitsService
+        from web.services.usage_limits_service import UsageLimitsService
 
         # Get days parameter (default 30 days)
         days = request.json.get('days', 30) if request.json else 30
@@ -4520,7 +4520,7 @@ def api_usage_status():
     user_id = session['user_id']
 
     try:
-        from services.usage_limits_service import UsageLimitsService
+        from web.services.usage_limits_service import UsageLimitsService
 
         # Get current daily usage check
         daily_check = UsageLimitsService.check_daily_user_limit(user_id)
@@ -4550,7 +4550,7 @@ def api_usage_limits():
         return jsonify({'error': 'Not authenticated'}), 401
 
     try:
-        from services.usage_limits_service import UsageLimitsService
+        from web.services.usage_limits_service import UsageLimitsService
 
         response_data = {
             'limits': {
