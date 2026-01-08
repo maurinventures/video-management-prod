@@ -1,0 +1,37 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: 'Type "DEPLOY" to confirm'
+        required: true
+        default: 'NO'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm_deploy == 'DEPLOY'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to Production Server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd ~/video-management
+          git pull origin main
+          sudo systemctl restart mv-internal
+
+    - name: Verify Deployment
+      run: |
+        sleep 10
+        echo "Checking main site..."
+        curl -f https://maurinventuresinternal.com/ || exit 1
+        echo "Checking API health..."
+        curl -f https://maurinventuresinternal.com/api/health || exit 1
+        echo "✅ Deployment successful!"
