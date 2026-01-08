@@ -132,12 +132,19 @@ class RAGService:
             )
 
         except Exception as e:
-            self.logger.error(f"RAG search failed: {e}")
+            error_msg = str(e).lower()
+            if "hybrid_search" in error_msg and "does not exist" in error_msg:
+                self.logger.info(f"RAG search unavailable: hybrid_search function not installed. Using keyword fallback.")
+                search_method = 'rag_unavailable'
+            else:
+                self.logger.error(f"RAG search failed: {e}")
+                search_method = 'rag_failed'
+
             total_time = (time.time() - start_time) * 1000
 
             return RAGSearchResult(
                 chunks=[],
-                search_method='rag_failed',
+                search_method=search_method,
                 query_embedding_time_ms=0,
                 search_time_ms=0,
                 total_time_ms=total_time,
@@ -176,7 +183,7 @@ class RAGService:
                         s.speaker,
                         s.start_time,
                         s.end_time
-                    FROM hybrid_search(:query_text, :query_embedding::vector(1536), :similarity_threshold, :limit) h
+                    FROM hybrid_search(:query_text, (:query_embedding)::vector, :similarity_threshold, :limit) h
                     LEFT JOIN rag_chunks c ON c.id = h.chunk_id
                     LEFT JOIN rag_sections s ON s.id = c.section_id
                     LEFT JOIN rag_documents d ON d.id = c.document_id

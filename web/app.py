@@ -3007,11 +3007,43 @@ def api_chat():
             else:
                 search_method_used = 'none'
 
+            # Transform clips for frontend compatibility
+            transformed_clips = []
+            for clip in result.get('clips', []):
+                transformed_clip = {
+                    # Frontend expects these specific field names
+                    'sourceFile': clip.get('video_title', clip.get('filename', 'Unknown')),
+                    'startTime': f"{int(clip.get('start_time', 0)/60)}:{int(clip.get('start_time', 0)%60):02d}",
+                    'endTime': f"{int(clip.get('end_time', 0)/60)}:{int(clip.get('end_time', 0)%60):02d}",
+                    'duration': f"0:{int((clip.get('end_time', 0) - clip.get('start_time', 0))%60):02d}",
+                    'transcript': clip.get('text', clip.get('display_text', '')),
+                    'visualAnalysis': f"Video content from {clip.get('speaker', 'Unknown')} during {clip.get('event_name', 'Unknown Event')}",
+                    'type': 'video',  # Default to video, could be enhanced to detect audio
+                    # Keep original backend fields for compatibility
+                    'video_id': clip.get('video_id'),
+                    'video_title': clip.get('video_title'),
+                    'speaker': clip.get('speaker'),
+                    'event_name': clip.get('event_name'),
+                    'start_time': clip.get('start_time'),
+                    'end_time': clip.get('end_time'),
+                    'text': clip.get('text')
+                }
+                transformed_clips.append(transformed_clip)
+
+            # Calculate total duration from clips
+            total_duration_seconds = sum(
+                (clip.get('end_time', 0) - clip.get('start_time', 0))
+                for clip in result.get('clips', [])
+            )
+            total_duration = f"{int(total_duration_seconds/60)}:{int(total_duration_seconds%60):02d}"
+
             return jsonify({
                 'response': result['message'],
-                'clips': result.get('clips', []),
+                'clips': transformed_clips,
                 'audio_clips': audio_context[:20] if audio_context else [],  # Include relevant audio segments
                 'has_script': result.get('has_script', False),
+                'description': f"Generated a video script using {len(transformed_clips)} clips from your library",
+                'totalDuration': total_duration,
                 'context_segments': len(context),
                 'audio_segments': len(audio_context) if audio_context else 0,
                 'model': model,
