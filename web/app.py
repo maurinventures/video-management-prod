@@ -4140,10 +4140,13 @@ def api_auth_setup_2fa():
         # For initial setup (no token provided) - generate QR code
         if not token:
             if 'pending_2fa_setup_user_id' not in session:
-                print(f"2FA QR generation failed - no pending_2fa_setup_user_id in session")
-                return jsonify({'success': False, 'error': 'No pending 2FA setup'}), 400
-
-            print(f"2FA QR generation - found user_id in session: {session.get('pending_2fa_setup_user_id')}")
+                return jsonify({
+                    'success': False,
+                    'error': 'No pending 2FA setup',
+                    'debug': {
+                        'session_keys': list(session.keys()) if session else []
+                    }
+                }), 400
 
             qr_data = AuthService.setup_2fa_secret()
 
@@ -4154,7 +4157,12 @@ def api_auth_setup_2fa():
             return jsonify({
                 'success': True,
                 'qr_code': qr_data['qr_code'],
-                'secret': qr_data['secret']
+                'secret': qr_data['secret'],
+                'debug': {
+                    'user_id_in_session': session.get('pending_2fa_setup_user_id'),
+                    'secret_stored': True,
+                    'session_modified': True
+                }
             })
 
         # For verification (token provided) - complete setup
@@ -4162,11 +4170,18 @@ def api_auth_setup_2fa():
             # Debug session state
             has_user_id = 'pending_2fa_setup_user_id' in session
             has_secret = 'pending_2fa_secret' in session
-            print(f"2FA completion - Session debug: user_id={has_user_id}, secret={has_secret}")
+            debug_info = {
+                'has_user_id': has_user_id,
+                'has_secret': has_secret,
+                'session_keys': list(session.keys()) if session else []
+            }
 
             if not has_user_id or not has_secret:
-                print(f"2FA completion failed - missing session data: user_id={has_user_id}, secret={has_secret}")
-                return jsonify({'success': False, 'error': 'No pending 2FA setup'}), 400
+                return jsonify({
+                    'success': False,
+                    'error': 'No pending 2FA setup',
+                    'debug': debug_info
+                }), 400
 
             user_id = session['pending_2fa_setup_user_id']
             secret = session['pending_2fa_secret']
