@@ -2834,6 +2834,9 @@ def api_chat():
         copy_intent = AIService.detect_copy_intent(user_message)
         script_intent = AIService.detect_script_intent(user_message)
 
+        # Debug logging for script detection
+        print(f"🔍 DEBUG: user_message='{user_message}', script_intent={script_intent}")
+
         # COPY GENERATION MODE
         if copy_intent['is_copy'] and copy_intent['persona_name']:
             # Search for relevant context for copy generation (with RAG integration)
@@ -2911,12 +2914,14 @@ def api_chat():
 
         # VIDEO SCRIPT MODE
         if script_intent:
+            print(f"🎬 DEBUG: Entering VIDEO SCRIPT MODE")
             # Search for relevant transcript context (with RAG integration)
             context = TranscriptService.search_for_context(
                 user_message,
                 use_rag=(use_rag and context_mode != 'keyword')
             )
             audio_context = search_audio_for_context(user_message, limit=50)
+            print(f"🎬 DEBUG: Found {len(context) if context else 0} context items")
 
             if not context:
                 response_text = "I couldn't find any matching content in the video library. Try different keywords or check the Transcripts page to see what's available."
