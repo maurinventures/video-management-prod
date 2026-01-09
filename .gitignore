@@ -58,3 +58,26 @@ package-lock.json
 
 # Test results
 test-results/
+
+# Cleanup patterns for temp/debug files
+*_result.json
+*_cookies.txt
+*_test.txt
+temp_*.txt
+quick_*.txt
+qr_*.json
+*_qr.json
+*_debug.json
+*_login.json
+*_backup_*.json
+*_verification*.json
+current_*.txt
+fresh_*.txt
+email_*.txt
+token.txt
+test_backup_*.txt
+test_new_*.txt
+comprehensive_*.txt
+verify.txt
+*.db
+!migrations/*.db
