@@ -40,8 +40,8 @@ def test_all_claude_models():
         },
         {
             "name": "claude-opus",
-            "display": "Claude Opus 4",
-            "expected_backend": "claude-opus-4-0-20250514",
+            "display": "Claude Opus 4.5",
+            "expected_backend": "claude-opus-4-5-20251101",
             "description": "Most capable model"
         },
         {
