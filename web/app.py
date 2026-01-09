@@ -3044,7 +3044,7 @@ def api_chat():
                 'response': result['message'],
                 'clips': transformed_clips,
                 'audio_clips': audio_context[:20] if audio_context else [],  # Include relevant audio segments
-                'has_script': result.get('has_script', False),
+                'has_script': result.get('has_script', True),  # Default True since script was requested
                 'description': f"Generated a video script using {len(transformed_clips)} clips from your library",
                 'totalDuration': total_duration,
                 'context_segments': len(context),
