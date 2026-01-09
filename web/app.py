@@ -687,8 +687,8 @@ The user has access to a video management system with transcripts, but you shoul
     # Model mapping for API calls
     model_mapping = {
         'claude-sonnet': 'claude-sonnet-4-20250514',
-        'claude-opus': 'claude-opus-4-20241120',
-        'claude-haiku': 'claude-haiku-3-5-20241120',
+        'claude-opus': 'claude-opus-4-0-20250514',
+        'claude-haiku': 'claude-3-5-haiku-20241022',
         'gpt-4o': 'gpt-4o',
         'gpt-4-turbo': 'gpt-4-turbo',
         'gpt-3.5-turbo': 'gpt-3.5-turbo'

@@ -76,7 +76,7 @@ def test_anthropic_key(key):
         import anthropic
         client = anthropic.Anthropic(api_key=key)
         response = client.messages.create(
-            model="claude-haiku-3-5-20241120",
+            model="claude-3-5-haiku-20241022",
             max_tokens=10,
             messages=[{"role": "user", "content": "Hi"}]
         )
