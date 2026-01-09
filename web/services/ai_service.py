@@ -1444,6 +1444,10 @@ If you can't determine a field, use empty string. Be concise."""
         """
         message_lower = message.lower()
 
+        # Check for @video command first (explicit script request)
+        if message_lower.startswith('@video'):
+            return True
+
         # Script action indicators
         script_actions = ['create', 'make', 'generate', 'write', 'draft', 'build', 'compile']
         script_types = ['script', 'video', 'compilation', 'edit', 'clip', 'footage']
