@@ -130,7 +130,7 @@ app = Flask(__name__)
 
 # CORS configuration for React frontend
 CORS(app,
-     origins=['http://localhost:3000'],
+     origins=['http://localhost:3000', 'https://maurinventuresinternal.com'],
      supports_credentials=True,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'])

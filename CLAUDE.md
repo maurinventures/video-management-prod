@@ -182,3 +182,45 @@ Wait for approval.
 2. Document what broke
 3. Rollback using procedure above
 4. If rollback fails, user will restore manually
+
+## PROTECTED CODE - DO NOT MODIFY WITHOUT EXPLICIT PERMISSION
+
+These changes have been debugged and verified. Do not revert, overwrite, refactor, or "clean up" unless explicitly asked.
+
+### Authentication (LOCKED)
+- `UserContext.tsx` - fetches real user from /api/auth/me
+- Session uses 14-day persistent cookie, not session cookie
+- 2FA required on every login
+- Sidebar and all components read user from UserContext
+
+### CORS (LOCKED)
+- `web/app.py` CORS origins must include:
+  - `http://localhost:3000`
+  - `https://maurinventuresinternal.com`
+
+### API Integration (LOCKED)
+- `chat-screen.tsx` calls `/api/chat` - no setTimeout mocks
+- `library-screen.tsx` calls `/api/library/videos` and `/api/library/audio` - no mock data imports
+- All fetch() calls include `credentials: 'include'`
+
+### Model Names (LOCKED)
+- Anthropic: `claude-sonnet-4-20250514` (NOT claude-3-5-sonnet)
+- Do not change model strings without explicit permission
+
+### Data Sources (LOCKED)
+- Library data comes from API, NOT from `src/app/data/library-data.ts`
+- User data comes from UserContext, NOT hardcoded names
+- Do not import mock data files in production components
+
+### Script Generation UI (LOCKED)
+- `ScriptGenerationResponse` component must be used for script responses
+- Script responses must be transformed to `ScriptGenerationData` format
+- Do not render script responses as plain markdown text
+
+## Before Modifying Protected Code
+1. STOP
+2. Tell the user which protected file you need to change and why
+3. Wait for explicit approval
+4. Make the change
+5. Verify you didn't break other protected items
+
